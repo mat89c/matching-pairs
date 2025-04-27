@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.php": "php",
+        "cstdlib": "c",
+        "paths.h": "c"
+    },
+    "files.insertFinalNewline": true
+}
