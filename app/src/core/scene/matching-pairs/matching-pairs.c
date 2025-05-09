@@ -4,6 +4,11 @@
 
 static void update(Scene *scene) {
     MatchingPairs *matchingPairs = (MatchingPairs *)scene;
+
+    if (matchingPairs->isFinished) {
+        return;
+    }
+
     matchingPairs->timer += GetFrameTime();
 
     for (int i = 0; i < NUMBER_OF_CARDS; i++) {
@@ -37,14 +42,26 @@ static void update(Scene *scene) {
             matchingPairs->secondFlippedCard->isVisible = false;
             matchingPairs->firstFlippedCard = NULL;
             matchingPairs->secondFlippedCard = NULL;
+            matchingPairs->numberOfMatches++;
+            matchingPairs->matchSound->playSound(matchingPairs->matchSound);
         }
+    }
+
+    if (matchingPairs->numberOfMatches == NUMBER_OF_PAIRS) {
+        matchingPairs->isFinished = true;
+    }
+
+    Vector2 mousePos = globalMouse->getMousePosition();
+    if (CheckCollisionPointRec(mousePos, matchingPairs->returnBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        matchingPairs->clickSound->playSound(matchingPairs->clickSound);
+        MainMenu *mainMenu = createMainMenu();
+        sceneProvider->setScene((Scene *)mainMenu, sceneProvider);
     }
 }
 
 static void draw(Scene *scene) {
     MatchingPairs *matchingPairs = (MatchingPairs *)scene;
 
-    BeginTextureMode(sceneProvider->renderTarget);
     ClearBackground(RAYWHITE);
     DrawTexture(matchingPairs->backgroundTexture, 0, 0, WHITE);
 
@@ -52,9 +69,9 @@ static void draw(Scene *scene) {
         matchingPairs->cards[i]->draw(matchingPairs->cards[i]);
     }
 
-    DrawText(TextFormat("Time: %.2f", matchingPairs->timer), 10, 10, 20, BLACK);
-    DrawText(TextFormat("Attempts: %d", matchingPairs->numberOfAttempts), 10, 30, 20, BLACK);
-    EndTextureMode();
+    DrawText(TextFormat("Time: %.2f", matchingPairs->timer), 60, 30, 20, (Color){50, 50, 50, 255});
+    DrawText(TextFormat("Attempts: %d", matchingPairs->numberOfAttempts), 60, 50, 20, (Color){50, 50, 50, 255});
+    DrawTexture(matchingPairs->returnBtnTexture, matchingPairs->returnBtnRect.x, matchingPairs->returnBtnRect.y, WHITE);
 }
 
 static void destroy(Scene *scene) {
@@ -65,7 +82,10 @@ static void destroy(Scene *scene) {
     }
 
     UnloadTexture(matchingPairs->backgroundTexture);
+    UnloadTexture(matchingPairs->returnBtnTexture);
     matchingPairs->cardTexture->destroy(matchingPairs->cardTexture);
+    matchingPairs->clickSound->destroy(matchingPairs->clickSound);
+    matchingPairs->matchSound->destroy(matchingPairs->matchSound);
 }
 
 MatchingPairs *createMatchingPairs() {
@@ -78,18 +98,27 @@ MatchingPairs *createMatchingPairs() {
     matchingPairs->base.update = update;
     matchingPairs->base.draw = draw;
     matchingPairs->base.destroy = destroy;
-    matchingPairs->cardTexture =
-        createCardTexture("app/assets/images/card-front.png", "app/assets/images/card-back.png");
+    matchingPairs->cardTexture = createCardTexture();
     matchingPairs->firstFlippedCard = NULL;
     matchingPairs->secondFlippedCard = NULL;
+    matchingPairs->numberOfMatches = 0;
     matchingPairs->numberOfAttempts = 0;
     matchingPairs->awaitingForMatch = false;
     matchingPairs->matchDelayTimer = 0.0f;
     matchingPairs->timer = 0.0f;
-    matchingPairs->backgroundTexture = LoadTexture("app/assets/images/game-bg.jpeg");
+    matchingPairs->backgroundTexture = LoadTexture(ASSETS_PATH_PREFIX "images/game-bg.jpeg");
+    matchingPairs->isFinished = false;
+    matchingPairs->returnBtnTexture = LoadTexture(ASSETS_PATH_PREFIX "images/return-btn.png");
+    matchingPairs->returnBtnRect = (Rectangle){WINDOW_WIDTH - 120, 30, 100, 100};
+
+    SoundManager *clickSound = createSoundManager(ASSETS_PATH_PREFIX "audio/click.mp3");
+    matchingPairs->clickSound = clickSound;
+
+    SoundManager *matchSound = createSoundManager(ASSETS_PATH_PREFIX "audio/match.ogg");
+    matchingPairs->matchSound = matchSound;
 
     for (int i = 0; i < NUMBER_OF_PAIRS; i++) {
-        matchingPairs->cards[i] = createCard(matchingPairs->cardTexture);
+        matchingPairs->cards[i] = createCard(matchingPairs->cardTexture, i);
     }
 
     for (int i = 0; i < NUMBER_OF_PAIRS; i++) {

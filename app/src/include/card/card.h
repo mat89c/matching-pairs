@@ -6,6 +6,7 @@
 #include GLOBAL_ID_GENERATOR
 #include CARD_TEXTURE
 #include GLOBAL_MOUSE
+#include SOUND_MANAGER
 #include <raylib.h>
 #include <stdbool.h>
 
@@ -29,9 +30,10 @@ struct Card {
     void (*update)(Card *card, struct MatchingPairs *matchingPairs);
     void (*onFlip)(struct Card *card, struct MatchingPairs *matchingPairs);
     bool isVisible;
+    SoundManager *clickSound;
 };
 
-Card *createCard(CardTexture *cardTexture);
+Card *createCard(CardTexture *cardTexture, size_t index);
 Card *cloneCard(Card *card);
 
 #endif

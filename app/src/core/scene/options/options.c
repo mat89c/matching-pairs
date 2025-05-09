@@ -30,7 +30,6 @@ static void draw(Scene *scene) {
     sprintf(musicVolStr, "%.0f", globalGameOptions->musicVolume);
     sprintf(sfxVolStr, "%.0f", globalGameOptions->sfxVolume);
 
-    BeginTextureMode(sceneProvider->renderTarget);
     ClearBackground(RAYWHITE);
     DrawTexture(options->background, 0, 0, WHITE);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
@@ -42,7 +41,6 @@ static void draw(Scene *scene) {
 
     DrawTexture(options->isBackBtnHovered ? options->backBtnPressed : options->backBtn, options->backBtnRect.x,
                 options->backBtnRect.y, WHITE);
-    EndTextureMode();
 }
 
 static void destroy(Scene *scene) {
@@ -65,11 +63,11 @@ Options *createOptions(void) {
     options->base.update = update;
     options->base.draw = draw;
     options->base.destroy = destroy;
-    options->background = LoadTexture("app/assets/images/main-menu-bg.jpeg");
-    options->backBtn = LoadTexture("app/assets/images/back-btn.png");
-    options->backBtnPressed = LoadTexture("app/assets/images/back-btn-pressed.png");
+    options->background = LoadTexture(ASSETS_PATH_PREFIX "images/game-bg.jpeg");
+    options->backBtn = LoadTexture(ASSETS_PATH_PREFIX "images/back-btn.png");
+    options->backBtnPressed = LoadTexture(ASSETS_PATH_PREFIX "images/back-btn-pressed.png");
     options->isBackBtnHovered = false;
-    options->clickSound = createSoundManager("app/assets/audio/click.mp3");
+    options->clickSound = createSoundManager(ASSETS_PATH_PREFIX "audio/click.mp3");
 
     memoryManager->addObject(options);
 

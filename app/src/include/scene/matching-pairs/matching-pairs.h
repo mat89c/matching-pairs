@@ -7,6 +7,8 @@
 #include CARD
 #include SCENE_PROVIDER
 #include CARD_TEXTURE
+#include SOUND_MANAGER
+#include MAIN_MENU
 #include <raylib.h>
 #include <stdbool.h>
 
@@ -33,6 +35,11 @@ struct MatchingPairs {
     float matchDelayTimer;
     float timer;
     Texture2D backgroundTexture;
+    bool isFinished;
+    Texture2D returnBtnTexture;
+    Rectangle returnBtnRect;
+    SoundManager *clickSound;
+    SoundManager *matchSound;
 };
 
 MatchingPairs *createMatchingPairs();

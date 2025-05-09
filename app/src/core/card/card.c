@@ -24,6 +24,7 @@ static void update(Card *card, struct MatchingPairs *matchingPairs) {
         IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         card->isFlipped = true;
         card->onFlip(card, matchingPairs);
+        card->clickSound->playSound(card->clickSound);
     }
 }
 
@@ -36,13 +37,16 @@ static void draw(Card *card) {
 
     if (card->isFlipped) {
         DrawTexture(card->backTexture, card->destination.x, card->destination.y, WHITE);
-        DrawText(TextFormat("Card %d", card->id), card->destination.x + 45, card->destination.y + 50, 20, BLACK);
     }
 }
 
-static void destroy(Card *card) {}
+static void destroy(Card *card) {
+    UnloadTexture(card->frontTexture);
+    UnloadTexture(card->backTexture);
+    card->clickSound->destroy(card->clickSound);
+}
 
-Card *createCard(CardTexture *cardTexture) {
+Card *createCard(CardTexture *cardTexture, size_t index) {
     Card *card = malloc(sizeof(Card));
     if (NULL == card) {
         exit(EXIT_FAILURE);
@@ -53,12 +57,16 @@ Card *createCard(CardTexture *cardTexture) {
     card->isFlipped = false;
     card->isMatched = false;
     card->frontTexture = cardTexture->frontTexture;
-    card->backTexture = cardTexture->backTexture;
+    card->backTexture = cardTexture->backTexture[index];
     card->destroy = destroy;
     card->draw = draw;
     card->update = update;
     card->onFlip = onFlip;
     card->isVisible = true;
+
+    SoundManager *clickSound = createSoundManager(ASSETS_PATH_PREFIX "audio/click.mp3");
+    card->clickSound = clickSound;
+
     memoryManager->addObject(card);
 
     return card;
@@ -81,6 +89,9 @@ Card *cloneCard(Card *original) {
     card->destroy = destroy;
     card->onFlip = onFlip;
     card->isVisible = original->isVisible;
+
+    SoundManager *clickSound = createSoundManager(ASSETS_PATH_PREFIX "audio/click.mp3");
+    card->clickSound = clickSound;
 
     memoryManager->addObject(card);
 

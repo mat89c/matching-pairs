@@ -1,7 +1,7 @@
 #include "src/paths.h"
 #include MEMORY_MANAGER
 
-void addObject(void *object) {
+static void addObject(void *object) {
     size_t newCount = memoryManager->count + 1;
     void **newObjects = realloc(memoryManager->objects, newCount * sizeof(void *));
 
@@ -14,7 +14,7 @@ void addObject(void *object) {
     memoryManager->count = newCount;
 }
 
-void freeMemoryAtIndex(size_t index) {
+static void freeMemoryAtIndex(size_t index) {
     if (NULL == memoryManager->objects[index]) {
         return;
     }
@@ -23,7 +23,7 @@ void freeMemoryAtIndex(size_t index) {
     memoryManager->objects[index] = NULL;
 }
 
-void freeMemory(MemoryManager *memoryManager) {
+static void freeMemory(MemoryManager *memoryManager) {
     for (size_t i = 0; i < memoryManager->count; i++) {
         if (NULL == memoryManager->objects[i]) {
             continue;
@@ -43,7 +43,7 @@ void destroyMemoryManager(MemoryManager *memoryManager) {
     free(memoryManager);
 }
 
-size_t nextIndex(MemoryManager *memoryManager) { return memoryManager->count - 1; }
+static size_t nextIndex(MemoryManager *memoryManager) { return memoryManager->count - 1; }
 
 MemoryManager *createMemoryManager(void) {
     memoryManager = malloc(sizeof(MemoryManager));

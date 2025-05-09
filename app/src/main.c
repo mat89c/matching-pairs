@@ -10,13 +10,28 @@
 #define RAYGUI_IMPLEMENTATION
 #include RAYGUI
 #include GLOBAL_MOUSE
-#include <stdio.h>
+
+#if defined(PLATFORM_ANDROID)
+#include <android_native_app_glue.h>
+#endif
+
+#if defined(PLATFORM_WEB)
+#include <emscripten.h>
+#endif
 
 MemoryManager *memoryManager = NULL;
 SceneProvider *sceneProvider = NULL;
 GlobalGameOptions *globalGameOptions = NULL;
 GlobalIdGenerator *globalIdGenerator = NULL;
 GlobalMouse *globalMouse = NULL;
+SceneManager *sceneManager = NULL;
+MusicManager *musicManager = NULL;
+bool windowShouldClose = false;
+
+void runSceneWrapper(void) {
+    musicManager->updateMusic(musicManager);
+    sceneManager->runScene(sceneProvider);
+}
 
 int main(void) {
     createWindow();
@@ -27,19 +42,21 @@ int main(void) {
     globalGameOptions = createGlobalGameOptions();
     globalIdGenerator = createGlobalIdGenerator();
     globalMouse = createGlobalMouse();
-    SceneManager *sceneManager = createSceneManager();
+    sceneManager = createSceneManager();
 
     MainMenu *mainMenu = createMainMenu();
     sceneProvider->setScene((Scene *)mainMenu, sceneProvider);
 
-    MusicManager *musicManager = createMusicManager("app/assets/audio/music.ogg");
+    musicManager = createMusicManager(ASSETS_PATH_PREFIX "audio/music.ogg");
     musicManager->playMusic(musicManager);
 
+#if defined(PLATFORM_WEB)
+    emscripten_set_main_loop(runSceneWrapper, 0, 1);
+#else
     while (!WindowShouldClose() && !windowShouldClose) {
-        SetMusicVolume(musicManager->music, globalGameOptions->musicVolume / 100.0f);
-        musicManager->updateMusic(musicManager);
-        sceneManager->runScene(sceneProvider);
+        runSceneWrapper();
     }
+#endif
 
     UnloadRenderTexture(sceneManager->renderTarget);
     musicManager->destroy(musicManager);
@@ -48,5 +65,6 @@ int main(void) {
 
     CloseAudioDevice();
     CloseWindow();
+
     return 0;
 }

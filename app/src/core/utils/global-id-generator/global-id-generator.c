@@ -1,7 +1,7 @@
 #include "src/paths.h"
 #include GLOBAL_ID_GENERATOR
 
-int generateId(GlobalIdGenerator *self) { return self->id++; }
+static int generateId(GlobalIdGenerator *self) { return self->id++; }
 
 GlobalIdGenerator *createGlobalIdGenerator(void) {
     GlobalIdGenerator *globalIdGenerator = malloc(sizeof(GlobalIdGenerator));

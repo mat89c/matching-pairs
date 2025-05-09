@@ -4,31 +4,33 @@
 static void draw(Scene *scene) {
     MainMenu *mainMenu = (MainMenu *)scene;
 
-    BeginTextureMode(sceneProvider->renderTarget);
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
     DrawTexture(mainMenu->background, 0, 0, WHITE);
+    DrawTexture(mainMenu->title, WINDOW_WIDTH / 2.0f - mainMenu->title.width / 2.0f, 50.0f, WHITE);
     DrawTexture(mainMenu->isStartGameBtnHovered ? mainMenu->startGameBtnPressed : mainMenu->startGameBtn,
                 mainMenu->startGameBtnRect.x, mainMenu->startGameBtnRect.y, WHITE);
-    DrawTexture(mainMenu->isQuitBtnHovered ? mainMenu->quitBtnPressed : mainMenu->quitBtn, mainMenu->quitBtnRect.x,
-                mainMenu->quitBtnRect.y, WHITE);
     DrawTexture(mainMenu->isOptionsBtnHovered ? mainMenu->optionsBtnPressed : mainMenu->optionsBtn,
                 mainMenu->optionsBtnRect.x, mainMenu->optionsBtnRect.y, WHITE);
-    EndTextureMode();
+
+#if !defined(PLATFORM_WEB)
+    DrawTexture(mainMenu->isQuitBtnHovered ? mainMenu->quitBtnPressed : mainMenu->quitBtn, mainMenu->quitBtnRect.x,
+                mainMenu->quitBtnRect.y, WHITE);
+#endif
 }
 
 static void update(Scene *scene) {
     MainMenu *mainMenu = (MainMenu *)scene;
 
     mainMenu->startGameBtnRect = (Rectangle){WINDOW_WIDTH / 2.0f - mainMenu->startGameBtn.width / 2.0f,
-                                             WINDOW_HEIGHT / 2.0f - mainMenu->startGameBtn.height / 2.0f - 100.0f,
+                                             WINDOW_HEIGHT / 2.0f - mainMenu->startGameBtn.height / 2.0f,
                                              mainMenu->startGameBtn.width, mainMenu->startGameBtn.height};
 
     mainMenu->quitBtnRect = (Rectangle){WINDOW_WIDTH / 2.0f - mainMenu->quitBtn.width / 2.0f,
-                                        WINDOW_HEIGHT / 2.0f - mainMenu->quitBtn.height / 2.0f + 100.0f,
+                                        WINDOW_HEIGHT / 2.0f - mainMenu->quitBtn.height / 2.0f + 200.0f,
                                         mainMenu->quitBtn.width, mainMenu->quitBtn.height};
 
     mainMenu->optionsBtnRect = (Rectangle){WINDOW_WIDTH / 2.0f - mainMenu->optionsBtn.width / 2.0f,
-                                           WINDOW_HEIGHT / 2.0f - mainMenu->optionsBtn.height / 2.0f,
+                                           WINDOW_HEIGHT / 2.0f - mainMenu->optionsBtn.height / 2.0f + 105.0f,
                                            mainMenu->optionsBtn.width, mainMenu->optionsBtn.height};
 
     Vector2 mousePos = globalMouse->getMousePosition();
@@ -94,20 +96,22 @@ MainMenu *createMainMenu() {
     mainMenu->base.update = update;
     mainMenu->base.draw = draw;
     mainMenu->base.destroy = destroy;
-    mainMenu->background = LoadTexture("app/assets/images/main-menu-bg.jpeg");
-    mainMenu->startGameBtn = LoadTexture("app/assets/images/start-game-btn.png");
-    mainMenu->startGameBtnPressed = LoadTexture("app/assets/images/start-game-btn-pressed.png");
+    mainMenu->title = LoadTexture(ASSETS_PATH_PREFIX "images/main-menu-header.png");
+    mainMenu->background = LoadTexture(ASSETS_PATH_PREFIX "images/game-bg.jpeg");
+    mainMenu->startGameBtn = LoadTexture(ASSETS_PATH_PREFIX "images/start-game-btn.png");
+    mainMenu->startGameBtnPressed = LoadTexture(ASSETS_PATH_PREFIX "images/start-game-btn-pressed.png");
+    mainMenu->startGameBtnRect = (Rectangle){0, 0, 0, 0};
     mainMenu->isStartGameBtnHovered = false;
     mainMenu->quitBtnRect = (Rectangle){0, 0, 0, 0};
-    mainMenu->quitBtn = LoadTexture("app/assets/images/quit-btn.png");
-    mainMenu->quitBtnPressed = LoadTexture("app/assets/images/quit-btn-pressed.png");
+    mainMenu->quitBtn = LoadTexture(ASSETS_PATH_PREFIX "images/quit-btn.png");
+    mainMenu->quitBtnPressed = LoadTexture(ASSETS_PATH_PREFIX "images/quit-btn-pressed.png");
     mainMenu->isQuitBtnHovered = false;
     mainMenu->optionsBtnRect = (Rectangle){0, 0, 0, 0};
-    mainMenu->optionsBtn = LoadTexture("app/assets/images/options-btn.png");
-    mainMenu->optionsBtnPressed = LoadTexture("app/assets/images/options-btn-pressed.png");
+    mainMenu->optionsBtn = LoadTexture(ASSETS_PATH_PREFIX "images/options-btn.png");
+    mainMenu->optionsBtnPressed = LoadTexture(ASSETS_PATH_PREFIX "images/options-btn-pressed.png");
     mainMenu->isOptionsBtnHovered = false;
 
-    SoundManager *clickSound = createSoundManager("app/assets/audio/click.mp3");
+    SoundManager *clickSound = createSoundManager(ASSETS_PATH_PREFIX "audio/click.mp3");
     mainMenu->clickSound = clickSound;
 
     memoryManager->addObject(mainMenu);

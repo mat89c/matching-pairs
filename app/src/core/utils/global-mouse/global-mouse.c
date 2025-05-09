@@ -2,12 +2,19 @@
 #include GLOBAL_MOUSE
 #include SCENE_PROVIDER
 
-Vector2 getMousePosition(void) {
-    Vector2 mousePos = GetMousePosition();
-    mousePos.x = (mousePos.x - sceneProvider->offsetX) / sceneProvider->windowScale;
-    mousePos.y = (mousePos.y - sceneProvider->offsetY) / sceneProvider->windowScale;
+static Vector2 getMousePosition(void) {
+    Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), sceneProvider->camera);
 
-    return mousePos;
+#if defined(PLATFORM_WEB)
+    float scaleX = (float)GetScreenWidth() / WINDOW_WIDTH;
+    float scaleY = (float)GetScreenHeight() / WINDOW_HEIGHT;
+
+    Vector2 mouseWorldPosScaled = {mouseWorldPos.x / scaleX, mouseWorldPos.y / scaleY};
+
+    return mouseWorldPosScaled;
+#endif
+
+    return mouseWorldPos;
 }
 
 GlobalMouse *createGlobalMouse(void) {

@@ -2,7 +2,9 @@
     "files.associations": {
         "*.php": "php",
         "cstdlib": "c",
-        "paths.h": "c"
+        "paths.h": "c",
+        "android_native_app_glue.h": "c",
+        "emscripten.h": "c"
     },
     "files.insertFinalNewline": true
 }

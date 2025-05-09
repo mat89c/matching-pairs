@@ -20,6 +20,4 @@ typedef struct {
 
 SceneManager *createSceneManager();
 
-void runScene(SceneProvider *sceneProvider);
-
 #endif

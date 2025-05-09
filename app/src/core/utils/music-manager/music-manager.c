@@ -1,10 +1,13 @@
 #include "src/paths.h"
 #include MUSIC_MANAGER
 #include MEMORY_MANAGER
-
+#include GLOBAL_GAME_OPTIONS
 static void playMusic(MusicManager *musicManager) { PlayMusicStream(musicManager->music); }
 
-static void updateMusic(MusicManager *musicManager) { UpdateMusicStream(musicManager->music); }
+static void updateMusic(MusicManager *musicManager) {
+    SetMusicVolume(musicManager->music, globalGameOptions->musicVolume / 100.0f);
+    UpdateMusicStream(musicManager->music);
+}
 
 static void stopMusic(MusicManager *musicManager) { StopMusicStream(musicManager->music); }
 

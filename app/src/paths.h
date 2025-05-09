@@ -1,6 +1,12 @@
 #ifndef PATHS_H
 #define PATHS_H
 
+#if defined(PLATFORM_ANDROID)
+#define ASSETS_PATH_PREFIX ""
+#else
+#define ASSETS_PATH_PREFIX "app/assets/"
+#endif
+
 #define WINDOW_MANAGER "src/include/utils/window-manager/window-manager.h"
 #define MEMORY_MANAGER "src/include/utils/memory-manager/memory-manager.h"
 #define SCENE_MANAGER "src/include/utils/scene-manager/scene-manager.h"

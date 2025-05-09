@@ -7,12 +7,3 @@ services:
       dockerfile: ubuntu/Dockerfile
     volumes:
       - ../app:/app:rw
-  
-  emsdk:
-    container_name: emsdk
-    tty: true
-    build:
-      context: .
-      dockerfile: emsdk/Dockerfile
-    volumes:
-      - ../app:/app:rw

@@ -22,6 +22,7 @@ struct MainMenu {
     void (*draw)(Scene *scene);
     void (*destroy)(Scene *scene);
     Texture2D background;
+    Texture2D title;
     Rectangle startGameBtnRect;
     Texture2D startGameBtn;
     Texture2D startGameBtnPressed;

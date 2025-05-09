@@ -17,12 +17,7 @@ struct SceneProvider {
     Scene *previousScene;
     size_t previousSceneMemoryIndex;
     void (*setScene)(Scene *scene, SceneProvider *self);
-    RenderTexture2D renderTarget;
-    float windowScale;
-    int renderWidth;
-    int renderHeight;
-    int offsetX;
-    int offsetY;
+    Camera2D camera;
 };
 
 SceneProvider *createSceneProvider();

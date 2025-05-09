@@ -29,9 +29,15 @@
 PLATFORM              ?= $(PLATFORM)
 
 # Define project variables
-PROJECT_NAME          ?= $(PROJECT_NAME)
+PROJECT_NAME          ?= matching_pairs
 PROJECT_VERSION       ?= $(PROJECT_VERSION)
 PROJECT_BUILD_PATH    ?= .
+
+ifeq ($(PLATFORM),PLATFORM_WEB)
+    OUTPUT_DIR           ?= html
+else
+    OUTPUT_DIR           ?= src
+endif
 
 RAYLIB_PATH           ?= /raylib
 
@@ -39,6 +45,15 @@ RAYLIB_PATH           ?= /raylib
 # NOTE: Those variables are only used for PLATFORM_OS: LINUX, BSD
 RAYLIB_INCLUDE_PATH   ?= /usr/local/include
 RAYLIB_LIB_PATH       ?= /usr/local/lib
+
+# Define raylib library paths for different platforms
+ifeq ($(PLATFORM),PLATFORM_DESKTOP)
+    RAYLIB_LIB = $(RAYLIB_LIB_PATH)/libraylib.a
+else ifeq ($(PLATFORM),PLATFORM_WEB)
+    RAYLIB_LIB = $(RAYLIB_LIB_PATH)/libraylib_web.a
+else ifeq ($(PLATFORM),PLATFORM_ANDROID)
+    RAYLIB_LIB = $(RAYLIB_LIB_PATH)/libraylib_android.a
+endif
 
 # Library type compilation: STATIC (.a) or SHARED (.so/.dll)
 RAYLIB_LIBTYPE        ?= STATIC
@@ -52,10 +67,10 @@ USE_WAYLAND_DISPLAY   ?= FALSE
 
 # PLATFORM_WEB: Default properties
 BUILD_WEB_ASYNCIFY    ?= FALSE
-BUILD_WEB_SHELL       ?= minshell.html
+BUILD_WEB_SHELL       ?= /app/template.html
 BUILD_WEB_HEAP_SIZE   ?= 134217728
 BUILD_WEB_RESOURCES   ?= TRUE
-BUILD_WEB_RESOURCES_PATH  ?= resources
+BUILD_WEB_RESOURCES_PATH  ?= /app/assets
 
 # Use cross-compiler for PLATFORM_RPI
 ifeq ($(PLATFORM),PLATFORM_RPI)
@@ -184,9 +199,9 @@ ifeq ($(PLATFORM),PLATFORM_RPI)
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
     # HTML5 emscripten compiler
-    # WARNING: To compile to HTML5, code must be redesigned
-    # to use emscripten.h and emscripten_set_main_loop()
     CC = emcc
+    RAYLIB_PATH = /raylib
+    RAYLIB_LIB_PATH = /usr/local/lib
 endif
 
 # Define default make program: MAKE
@@ -199,7 +214,7 @@ ifeq ($(PLATFORM),PLATFORM_DESKTOP)
     endif
 endif
 ifeq ($(PLATFORM),PLATFORM_ANDROID)
-    MAKE = mingw32-make
+    MAKE = make
 endif
 
 # Define compiler flags: CFLAGS
@@ -213,7 +228,7 @@ endif
 #  -Wno-missing-braces  ignore invalid warning (GCC bug 53119)
 #  -Wno-unused-value    ignore unused return values of some functions (i.e. fread())
 #  -D_DEFAULT_SOURCE    use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
-CFLAGS = -std=c99 -Wall -Wno-missing-braces -Wunused-result -D_DEFAULT_SOURCE
+CFLAGS = -std=c11 -Wall -Wno-missing-braces -Wno-unused-but-set-variable -Wunused-result -D_DEFAULT_SOURCE
 
 ifeq ($(BUILD_MODE),DEBUG)
     CFLAGS += -g -D_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize-address-use-after-scope
@@ -310,7 +325,7 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     # --memory-init-file 0       # to avoid an external memory initialization code file (.mem)
     # --preload-file resources   # specify a resources folder for data compilation
     # --source-map-base          # allow debugging in browser with source map
-    LDFLAGS += -s USE_GLFW=3 -s TOTAL_MEMORY=$(BUILD_WEB_HEAP_SIZE) -s FORCE_FILESYSTEM=1
+    LDFLAGS += -s USE_GLFW=3 -s TOTAL_MEMORY=$(BUILD_WEB_HEAP_SIZE) -s FORCE_FILESYSTEM=1 -L$(RAYLIB_LIB_PATH)
     
     # Build using asyncify
     ifeq ($(BUILD_WEB_ASYNCIFY),TRUE)
@@ -326,6 +341,9 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     ifeq ($(BUILD_MODE),DEBUG)
         LDFLAGS += -s ASSERTIONS=1 --profiling
     endif
+
+    LDFLAGS += -s EXPORTED_FUNCTIONS=['_main','_malloc','_free']
+    LDFLAGS += -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','HEAPF32']
 
     # Define a custom shell .html and output extension
     LDFLAGS += --shell-file $(BUILD_WEB_SHELL)
@@ -394,7 +412,7 @@ ifeq ($(PLATFORM),PLATFORM_DRM)
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
     # Libraries for web (HTML5) compiling
-    LDLIBS = $(RAYLIB_RELEASE_PATH)/libraylib.a
+    LDLIBS = $(RAYLIB_LIB)
 endif
 
 # Define all source files required
@@ -424,11 +442,10 @@ endif
 all:
 	$(MAKE) $(MAKEFILE_PARAMS)
 
-
-
 # Project target defined by PROJECT_NAME
 $(PROJECT_NAME): $(OBJS)
-	$(CC) -o $(SRC_DIR)/$(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+	@mkdir -p $(OUTPUT_DIR)
+	$(CC) -o $(OUTPUT_DIR)/$(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)

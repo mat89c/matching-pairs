@@ -9,10 +9,10 @@ typedef struct CardTexture CardTexture;
 
 struct CardTexture {
     Texture2D frontTexture;
-    Texture2D backTexture;
+    Texture2D backTexture[9];
     void (*destroy)(CardTexture *cardTexture);
 };
 
-CardTexture *createCardTexture(const char *frontTexturePath, const char *backTexturePath);
+CardTexture *createCardTexture();
 
 #endif
