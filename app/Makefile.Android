@@ -38,11 +38,18 @@ ANDROID_API_VERSION     = 29
 ANDROID_NDK ?= /opt/android-ndk
 ANDROID_TOOLCHAIN = $(ANDROID_NDK)/toolchains/llvm/prebuilt/linux-x86_64
 
-ANDROID_ARCH_NAME   = arm64-v8a
-CCTYPE = aarch64-linux-android
-ARCH = aarch64
-LIBPATH = aarch64-linux-android
-ABI_FLAGS = -std=c11 -target aarch64 -mfix-cortex-a53-835769
+ifeq ($(ANDROID_ARCH),ARM64)
+    ANDROID_ARCH_NAME   = arm64-v8a
+endif
+
+ifeq ($(ANDROID_ARCH),x86_64)
+    ANDROID_ARCH_NAME   = x86_64
+endif
+
+ABI_FLAGS = -std=c11
+ifeq ($(ANDROID_ARCH),ARM64)
+    ABI_FLAGS += -target aarch64 -mfix-cortex-a53-835769
+endif
 
 # Required path variables
 # NOTE: JAVA_HOME must be set to JDK (using OpenJDK 13)
@@ -57,7 +64,8 @@ PROJECT_LIBRARY_NAME   ?= main
 PROJECT_BUILD_ID       ?= android
 PROJECT_BUILD_PATH     ?= $(PROJECT_BUILD_ID).$(PROJECT_NAME)
 PROJECT_RESOURCES_PATH ?= assets
-PROJECT_SOURCE_FILES   ?= $(shell find src/ -type f -name '*.c')
+#PROJECT_SOURCE_FILES   ?= $(shell find src -name "*.c" ! -path "src/*/utils/websocket-manager/emscripten/*")
+PROJECT_SOURCE_FILES   ?= $(shell find src/ -type f -name "*.c" ! -path "src/*/utils/websocket-manager/emscripten/*")
 NATIVE_APP_GLUE_PATH    = $(ANDROID_NDK)/sources/android/native_app_glue
 
 # Some source files are placed in directories, when compiling to some 
@@ -83,12 +91,19 @@ RAYLIB_LIBTYPE         ?= STATIC
 
 # Library path for libraylib.a/libraylib.so
 RAYLIB_LIB_PATH         = /usr/local/lib
-RAYLIB_ANDROID_LIB      = $(RAYLIB_LIB_PATH)/libraylib_android.a 
+RAYLIB_ANDROID_LIB      = $(RAYLIB_LIB_PATH)/libraylib.a 
 
 COPY_COMMAND ?= cp -f
 
-CC = $(ANDROID_TOOLCHAIN)/bin/aarch64-linux-android29-clang
-AR = $(ANDROID_TOOLCHAIN)/bin/llvm-ar
+ifeq ($(ANDROID_ARCH),ARM64)
+    CC = $(ANDROID_TOOLCHAIN)/bin/aarch64-linux-android$(ANDROID_API_VERSION)-clang
+    AR = $(ANDROID_TOOLCHAIN)/bin/llvm-ar
+endif
+ifeq ($(ANDROID_ARCH),x86_64)
+    CC = $(ANDROID_TOOLCHAIN)/bin/x86_64-linux-android$(ANDROID_API_VERSION)-clang
+    AR = $(ANDROID_TOOLCHAIN)/bin/llvm-ar
+endif
+
 LD = $(ANDROID_TOOLCHAIN)/bin/ld.lld
 
 CFLAGS = $(ABI_FLAGS) -nostdinc -ffunction-sections -funwind-tables -fstack-protector-strong -fPIC -Wall \
@@ -100,72 +115,51 @@ CFLAGS = $(ABI_FLAGS) -nostdinc -ffunction-sections -funwind-tables -fstack-prot
          -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include \
          -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux \
          -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android \
+         -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/netinet \
+         -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/arpa \
+         -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/net \
          -DANDROID -DPLATFORM_ANDROID -D__ANDROID_API__=29 \
-         -mno-outline-atomics \
-         -D__aarch64_swp4_acq=__aarch64_swp4 \
-         -D__aarch64_swp4_rel=__aarch64_swp4
+         -D_GNU_SOURCE \
 
-INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(NATIVE_APP_GLUE_PATH) \
-                -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android \
-                -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android/bits \
-                -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android/sys \
-                -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include \
-                -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include \
-                -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux \
-                -I/opt/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android \
-                -Iapp/libs \
-                #-I$(ANDROID_TOOLCHAIN)/sysroot/usr/include/$(CCTYPE) \
-                #-I$(ANDROID_TOOLCHAIN)/sysroot/usr/local/include
+
+INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(NATIVE_APP_GLUE_PATH) -I/usr/local/include -I/libwebsockets/build/include/libwebsockets -I/usr/local/openssl-android-arm64/include
 
 # Library paths
 NATIVE_APP_GLUE_LIB_PATH = $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)
 ANDROID_SYSROOT = $(ANDROID_TOOLCHAIN)/sysroot
 
-LDFLAGS = -u ANativeActivity_onCreate -u android_main -shared -Wl,--no-undefined -Wl,--gc-sections -Wl,-z,nocopyreloc -Wl,-soname,libmain.so \
-          -z noexecstack \
-          -z relro \
-          -z now \
-          -L$(ANDROID_SYSROOT)/usr/lib/$(LIBPATH)/$(ANDROID_API_VERSION) \
-          -L$(ANDROID_TOOLCHAIN)/lib/clang/17/lib/linux/$(ARCH) \
-          -L$(RAYLIB_LIB_PATH) \
-          -L$(NATIVE_APP_GLUE_LIB_PATH) \
-          -L. \
-          -L$(PROJECT_BUILD_PATH)/obj \
-          -L$(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME) \
-          -Wl,--allow-multiple-definition
 
-LDLIBS = -Wl,--whole-archive -lraylib_android -Wl,--no-whole-archive \
-         -llog \
-         -landroid \
-         -lEGL \
-         -lGLESv2 \
-         -lOpenSLES \
-         -lnative_app_glue \
-         -lc \
-         -lm \
-         -ldl \
-         -lz
+# Linker options
+LDFLAGS = -Wl,-soname,lib$(PROJECT_LIBRARY_NAME).so -Wl,--exclude-libs,libatomic.a 
+LDFLAGS += -Wl,--build-id -Wl,--no-undefined -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now -Wl,--warn-shared-textrel -Wl,--fatal-warnings 
+# Force linking of library module to define symbol
+LDFLAGS += -u ANativeActivity_onCreate
+# Library paths containing required libs
+LDFLAGS += -L. -L$(PROJECT_BUILD_PATH)/obj -L$(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME) -L$(ANDROID_TOOLCHAIN)\sysroot\usr\lib
 
-# Generate target objects list from PROJECT_SOURCE_FILES
-OBJS = $(patsubst %.c, $(PROJECT_BUILD_PATH)/obj/%.o, $(PROJECT_SOURCE_FILES))
+LDFLAGS += -L$(RAYLIB_LIB_PATH)
+LDFLAGS += -L/usr/local/openssl-android-arm64/lib
+LDFLAGS += -L/usr/local/lib
+
+LDLIBS = -lm -lc -lraylib -llog -landroid -lEGL -lGLESv2 -lOpenSLES -ldl /usr/local/lib/libcjson_android.a /usr/local/lib/libwebsockets.a -lssl -lcrypto
 
 # Android APK building process... some steps required...
 # NOTE: typing 'make' will invoke the default target entry called 'all'
 # TODO: Use apksigner for APK signing, jarsigner is not recommended
 all: create_temp_project_dirs \
-     copy_project_required_libs \
-     copy_project_resources \
-     generate_loader_script \
-     generate_android_manifest \
-     generate_apk_keystore \
-     config_project_package \
-	 compile_native_app_glue \
-     compile_project_code \
-     compile_project_class \
-     compile_project_class_dex \
-     create_project_apk_package \
-     sign_project_apk_package \
-	 zipalign_project_apk_package
+	generate_objs \
+	copy_project_resources \
+    copy_loader_script \
+    generate_android_manifest \
+    generate_apk_keystore \
+    config_project_package \
+	compile_native_app_glue \
+    compile_project_code \
+    compile_project_class \
+    compile_project_class_dex \
+    create_project_apk_package \
+    sign_project_apk_package \
+	zipalign_project_apk_package
 
 # WARNING: About build signing process:
 #  - If using apksigner, zipalign must be used before the APK file has been signed.
@@ -194,20 +188,24 @@ create_temp_project_dirs:
 	mkdir -p $(PROJECT_BUILD_PATH)/assets
 	mkdir -p $(PROJECT_BUILD_PATH)/obj/screens
 	$(foreach dir, $(PROJECT_SOURCE_DIRS), $(call create_dir, $(dir)))
+	$(COPY_COMMAND) /usr/local/openssl-android-arm64/lib/libssl.so $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/
+	$(COPY_COMMAND) /usr/local/openssl-android-arm64/lib/libcrypto.so $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/
 
-OBJS = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+SRC_DIR = src
+OBJ_DIR = obj
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(PROJECT_BUILD_PATH)/obj/$(SRC_DIR)/%.o, $(PROJECT_SOURCE_FILES))
 
-# Create obj directory and subdirectories if they don't exist
-$(shell mkdir -p $(dir $(OBJS)))
+generate_objs:
+	@echo "PLIKI!!!!!!!!!!!!!!: $(OBJS)"
+	@echo "PROJECT_SOURCES: $(PROJECT_SOURCE_FILES)"
 
-define create_dir
-    mkdir -p $(PROJECT_BUILD_PATH)/obj/$(1)
-endef
-    
 # Copy required shared libs for integration into APK
 # NOTE: If using shared libs they are loaded by generated NativeLoader.java
 copy_project_required_libs:
-	$(COPY_COMMAND) $(RAYLIB_ANDROID_LIB) $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/libraylib_android.a
+	$(COPY_COMMAND) $(RAYLIB_ANDROID_LIB) $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/libraylib.a
+	$(COPY_COMMAND) /usr/local/openssl-android-arm64/lib/libssl.so $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/
+	$(COPY_COMMAND) /usr/local/openssl-android-arm64/lib/libcrypto.so $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/
+	$(COPY_COMMAND) /usr/local/lib/libwebsockets.so $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/
 
 # Copy project required resources: strings.xml, icon.png, assets
 # NOTE: Required strings.xml is generated and game resources are copied to assets folder
@@ -219,32 +217,100 @@ copy_project_resources:
 	@echo "<resources><string name=\"app_name\">$(APP_LABEL_NAME)</string></resources>" >> $(PROJECT_BUILD_PATH)/res/values/strings.xml
 	@[ -d "$(PROJECT_RESOURCES_PATH)" ] && cp -rf $(PROJECT_RESOURCES_PATH) $(PROJECT_BUILD_PATH)
 
+copy_loader_script:
+	cp ./NativeLoader.java ./android.matching_pairs/src/com/mat89c/matching_pairs/NativeLoader.java
+
 # Generate NativeLoader.java to load required shared libraries
 # NOTE: Probably not the bet way to generate this file... but it works.
 generate_loader_script:
-ifeq ($(OS),Windows_NT)
-	@echo package com.$(APP_COMPANY_NAME).$(APP_PRODUCT_NAME); > $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-	@echo. >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-	@echo public class NativeLoader extends android.app.NativeActivity { >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-	@echo     static { >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-ifeq ($(RAYLIB_LIBTYPE),SHARED)
-	@echo         System.loadLibrary("raylib"); >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-endif
-	@echo         System.loadLibrary("$(PROJECT_LIBRARY_NAME)"); >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java 
-	@echo     } >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-	@echo } >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-else	
 	@echo "package com.$(APP_COMPANY_NAME).$(APP_PRODUCT_NAME);" > $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
 	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.content.Context;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.view.inputmethod.InputMethodManager;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.util.Log;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.widget.EditText;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.text.TextWatcher;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.text.Editable;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.view.ViewGroup;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "import android.widget.FrameLayout;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
 	@echo "public class NativeLoader extends android.app.NativeActivity {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-	@echo "    static {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-ifeq ($(RAYLIB_LIBTYPE),SHARED)
-	@echo "       System.loadLibrary(\"raylib\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-endif
-	@echo "        System.loadLibrary(\"$(PROJECT_LIBRARY_NAME)\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java 
+	@echo "    static { System.loadLibrary(\"main\"); }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    private EditText hiddenEditText;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    private static final String TAG = \"NativeLoader\";" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    @Override" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    protected void onCreate(android.os.Bundle savedInstanceState) {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        super.onCreate(savedInstanceState);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        hiddenEditText = new EditText(this);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        hiddenEditText.setLayoutParams(new FrameLayout.LayoutParams(1, 1));" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        hiddenEditText.setVisibility(android.view.View.INVISIBLE);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        hiddenEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        hiddenEditText.setFocusable(true);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        hiddenEditText.setFocusableInTouchMode(true);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        hiddenEditText.addTextChangedListener(new TextWatcher() {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            private String lastText = \"\";" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            @Override" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            public void afterTextChanged(Editable s) {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                String newText = s.toString();" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                if (!newText.equals(lastText)) {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    if (newText.length() < lastText.length()) {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                        nativeOnTextInput(\"\\b\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    } else if (newText.length() > lastText.length()) {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                        String diff = newText.substring(lastText.length());" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                        nativeOnTextInput(diff);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    lastText = newText;" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        });" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        addContentView(hiddenEditText, new FrameLayout.LayoutParams(1, 1));" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
 	@echo "    }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    public void showKeyboard() {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        Log.d(TAG, \"showKeyboard called\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        runOnUiThread(new Runnable() {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            @Override" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            public void run() {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                Log.d(TAG, \"Requesting focus for hiddenEditText\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                hiddenEditText.requestFocus();" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                if (imm != null) {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    Log.d(TAG, \"Showing keyboard\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                } else {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    Log.e(TAG, \"InputMethodManager is null\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        });" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    public void hideKeyboard() {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        Log.d(TAG, \"hideKeyboard called\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        runOnUiThread(new Runnable() {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            @Override" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            public void run() {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                if (imm != null) {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    Log.d(TAG, \"Hiding keyboard\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    imm.hideSoftInputFromWindow(hiddenEditText.getWindowToken(), 0);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                } else {" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                    Log.e(TAG, \"InputMethodManager is null\");" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "                }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "            }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "        });" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    }" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
+	@echo "    private native void nativeOnTextInput(String text);" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
 	@echo "}" >> $(PROJECT_BUILD_PATH)/src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/NativeLoader.java
-endif
 
 # Generate AndroidManifest.xml with all the required options
 # NOTE: Probably not the bet way to generate this file... but it works.
@@ -255,6 +321,8 @@ generate_android_manifest:
 	@echo "        android:versionCode=\"$(APP_VERSION_CODE)\" android:versionName=\"$(APP_VERSION_NAME)\" >" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
 	@echo "    <uses-sdk android:minSdkVersion=\"$(ANDROID_API_VERSION)\" />" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
 	@echo "    <uses-feature android:glEsVersion=\"0x00020000\" android:required=\"true\" />" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
+	@echo "    <uses-permission android:name=\"android.permission.INTERNET\" />" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
+	@echo "    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
 	@echo "    <application android:allowBackup=\"false\" android:label=\"@string/app_name\" android:icon=\"@drawable/icon\" >" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
 	@echo "        <activity android:name=\"com.$(APP_COMPANY_NAME).$(APP_PRODUCT_NAME).NativeLoader\"" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
 	@echo "            android:theme=\"@android:style/Theme.NoTitleBar.Fullscreen\"" >> $(PROJECT_BUILD_PATH)/AndroidManifest.xml
@@ -273,7 +341,11 @@ generate_android_manifest:
 # Generate storekey for APK signing: $(PROJECT_NAME).keystore
 # NOTE: Configure here your Distinguished Names (-dname) if required!
 generate_apk_keystore: 
+ifeq ($(OS),Windows_NT)
+	if not exist $(PROJECT_BUILD_PATH)/$(PROJECT_NAME).keystore $(JAVA_HOME)/bin/keytool -genkeypair -validity 10000 -dname "CN=$(APP_COMPANY_NAME),O=Android,C=ES" -keystore $(PROJECT_BUILD_PATH)/$(PROJECT_NAME).keystore -storepass $(APP_KEYSTORE_PASS) -keypass $(APP_KEYSTORE_PASS) -alias $(PROJECT_NAME)Key -keyalg RSA
+else
 	@[ -f "$(PROJECT_BUILD_PATH)/$(PROJECT_NAME).keystore" ] || $(JAVA_HOME)/bin/keytool -genkeypair -validity 10000 -dname "CN=$(APP_COMPANY_NAME),O=Android,C=ES" -keystore $(PROJECT_BUILD_PATH)/$(PROJECT_NAME).keystore -storepass $(APP_KEYSTORE_PASS) -keypass $(APP_KEYSTORE_PASS) -alias $(PROJECT_NAME)Key -keyalg RSA
+endif
 
 # Config project package and resource using AndroidManifest.xml and res/values/strings.xml
 # NOTE: Generates resources file: src/com/$(APP_COMPANY_NAME)/$(APP_PRODUCT_NAME)/R.java
@@ -282,31 +354,26 @@ config_project_package:
 
 # Compile native_app_glue code as static library: obj/libnative_app_glue.a
 compile_native_app_glue:
-	@echo "Starting compile native app glue"
-	$(CC) --sysroot=$(ANDROID_SYSROOT) -c $(NATIVE_APP_GLUE_PATH)/android_native_app_glue.c \
-		-o $(PROJECT_BUILD_PATH)/obj/native_app_glue.o $(INCLUDE_PATHS) $(CFLAGS)
-	@echo "Starting compile .a file"
-	@echo "CC: $(CC)"
-	@echo "CFLAGS: $(CFLAGS)"
-	@echo "INCLUDE_PATHS: $(INCLUDE_PATHS)"
-	@echo "SYSROOT: $(ANDROID_SYSROOT)"
-	$(AR) rcs $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/libnative_app_glue.a \
-		$(PROJECT_BUILD_PATH)/obj/native_app_glue.o
+	$(CC) -c $(NATIVE_APP_GLUE_PATH)/android_native_app_glue.c -o $(PROJECT_BUILD_PATH)/obj/native_app_glue.o $(CFLAGS)
+	$(AR) rcs $(PROJECT_BUILD_PATH)/obj/libnative_app_glue.a $(PROJECT_BUILD_PATH)/obj/native_app_glue.o
 
-# Compile project code into a static library
-compile_project_code:
-	@echo "Source files to compile: $(PROJECT_SOURCE_FILES)"
-	@echo "Compiling project code..."
-	$(foreach source,$(PROJECT_SOURCE_FILES),$(CC) -c $(source) -o $(PROJECT_BUILD_PATH)/obj/$(notdir $(basename $(source))).o $(CFLAGS) $(INCLUDE_PATHS) --sysroot=$(ANDROID_SYSROOT);)
-	$(CC) -c $(NATIVE_APP_GLUE_PATH)/android_native_app_glue.c -o $(PROJECT_BUILD_PATH)/obj/native_app_glue.o $(CFLAGS) $(INCLUDE_PATHS) --sysroot=$(ANDROID_SYSROOT)
-	@echo "Build .a file"
-	$(AR) rcs $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/libnative_app_glue.a $(PROJECT_BUILD_PATH)/obj/native_app_glue.o
-	@echo "Compile ..."
-	$(CC) -o $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/libmain.so $(PROJECT_BUILD_PATH)/obj/*.o $(LDFLAGS) $(LDLIBS)
+# Compile project code into a shared library: lib/lib$(PROJECT_LIBRARY_NAME).so 
+compile_project_code: $(OBJS)
+	@echo "=== Starting compile_project_code ==="
+	@echo "PROJECT_SOURCE_FILES: $(PROJECT_SOURCE_FILES)"
+	@echo "OBJS: $(OBJS)"
+	@echo "INCLUDE_PATHS: $(INCLUDE_PATHS)"
+	@echo "LDFLAGS: $(LDFLAGS)"
+	@echo "LDLIBS: $(LDLIBS)"
+	$(CC) -o $(PROJECT_BUILD_PATH)/lib/$(ANDROID_ARCH_NAME)/lib$(PROJECT_LIBRARY_NAME).so $(OBJS) -shared $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS)
+	@echo "=== Finished compile_project_code ==="
 
 # Compile all .c files required into object (.o) files
-$(PROJECT_BUILD_PATH)/obj/%.o:%.c
-	$(CC) -c $^ -o $@ $(INCLUDE_PATHS) $(CFLAGS) --sysroot=$(ANDROID_SYSROOT)
+$(PROJECT_BUILD_PATH)/obj/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+	@echo "=== Compiling $^ to $@ ==="
+	@mkdir -p $(dir $@)
+	$(CC) -c $^ -o $@ $(INCLUDE_PATHS) $(CFLAGS) --sysroot=$(ANDROID_TOOLCHAIN)/sysroot 
+	@echo "=== Finished compiling $^ ==="
     
 # Compile project .java code into .class (Java bytecode) 
 compile_project_class:
@@ -322,7 +389,7 @@ compile_project_class_dex:
 # NOTE: Use -A resources to define additional directory in which to find raw asset files
 create_project_apk_package:
 	$(ANDROID_BUILD_TOOLS)/aapt package -f -M $(PROJECT_BUILD_PATH)/AndroidManifest.xml -S $(PROJECT_BUILD_PATH)/res -A $(PROJECT_BUILD_PATH)/assets -I $(ANDROID_HOME)/platforms/android-$(ANDROID_API_VERSION)/android.jar -F $(PROJECT_BUILD_PATH)/bin/$(PROJECT_NAME).unsigned.apk $(PROJECT_BUILD_PATH)/bin
-	cd $(PROJECT_BUILD_PATH) && $(ANDROID_BUILD_TOOLS)/aapt add bin/$(PROJECT_NAME).unsigned.apk lib/$(ANDROID_ARCH_NAME)/lib$(PROJECT_LIBRARY_NAME).so
+	cd $(PROJECT_BUILD_PATH) && $(ANDROID_BUILD_TOOLS)/aapt add bin/$(PROJECT_NAME).unsigned.apk lib/$(ANDROID_ARCH_NAME)/lib$(PROJECT_LIBRARY_NAME).so lib/$(ANDROID_ARCH_NAME)/libssl.so lib/$(ANDROID_ARCH_NAME)/libcrypto.so $(PROJECT_SHARED_LIBS)
 
 # Create signed APK package using generated Key: bin/$(PROJECT_NAME).signed.apk 
 sign_project_apk_package:
@@ -348,10 +415,19 @@ logcat:
     
 # Install and monitorize $(PROJECT_NAME).apk to default emulator/device
 deploy:
-	$(ANDROID_PLATFORM_TOOLS)/	
+	$(ANDROID_PLATFORM_TOOLS)/adb install $(PROJECT_NAME).apk
 	$(ANDROID_PLATFORM_TOOLS)/adb logcat -c
 	$(ANDROID_PLATFORM_TOOLS)/adb logcat raylib:V *:S
 
+#$(ANDROID_PLATFORM_TOOLS)/adb logcat *:W
+
 # Clean everything
 clean:
+ifeq ($(OS),Windows_NT)
+	del $(PROJECT_BUILD_PATH)\* /f /s /q
+	rmdir $(PROJECT_BUILD_PATH) /s /q
+else
 	rm -r $(PROJECT_BUILD_PATH)
+endif
+	@echo Cleaning done
+

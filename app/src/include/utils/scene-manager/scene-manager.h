@@ -10,12 +10,6 @@
 
 typedef struct {
     void (*runScene)(SceneProvider *sceneProvider);
-    RenderTexture2D renderTarget;
-    float windowScale;
-    int renderWidth;
-    int renderHeight;
-    int offsetX;
-    int offsetY;
 } SceneManager;
 
 SceneManager *createSceneManager();

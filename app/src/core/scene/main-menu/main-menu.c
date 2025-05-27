@@ -7,6 +7,9 @@ static void draw(Scene *scene) {
     ClearBackground(BLACK);
     DrawTexture(mainMenu->background, 0, 0, WHITE);
     DrawTexture(mainMenu->title, WINDOW_WIDTH / 2.0f - mainMenu->title.width / 2.0f, 50.0f, WHITE);
+
+    DrawTexture(mainMenu->isHallOfFameBtnHovered ? mainMenu->hallOfFameBtnPressed : mainMenu->hallOfFameBtn,
+                mainMenu->hallOfFameBtnRect.x, mainMenu->hallOfFameBtnRect.y, WHITE);
     DrawTexture(mainMenu->isStartGameBtnHovered ? mainMenu->startGameBtnPressed : mainMenu->startGameBtn,
                 mainMenu->startGameBtnRect.x, mainMenu->startGameBtnRect.y, WHITE);
     DrawTexture(mainMenu->isOptionsBtnHovered ? mainMenu->optionsBtnPressed : mainMenu->optionsBtn,
@@ -16,10 +19,19 @@ static void draw(Scene *scene) {
     DrawTexture(mainMenu->isQuitBtnHovered ? mainMenu->quitBtnPressed : mainMenu->quitBtn, mainMenu->quitBtnRect.x,
                 mainMenu->quitBtnRect.y, WHITE);
 #endif
+
+    if (!globalWebsocketManager->isConnected(globalWebsocketManager)) {
+        DrawText("Cannot connect to websocket server...", WINDOW_WIDTH / 2.0f - 200.0f, 273.0f, 20, RED);
+    }
 }
 
 static void update(Scene *scene) {
     MainMenu *mainMenu = (MainMenu *)scene;
+
+    Vector2 mousePos = globalMouse->getMousePosition();
+
+    mainMenu->hallOfFameBtnRect = (Rectangle){WINDOW_WIDTH / 2.0f - mainMenu->hallOfFameBtn.width / 2.0f, 132.0f,
+                                              mainMenu->hallOfFameBtn.width, mainMenu->hallOfFameBtn.height};
 
     mainMenu->startGameBtnRect = (Rectangle){WINDOW_WIDTH / 2.0f - mainMenu->startGameBtn.width / 2.0f,
                                              WINDOW_HEIGHT / 2.0f - mainMenu->startGameBtn.height / 2.0f,
@@ -33,7 +45,11 @@ static void update(Scene *scene) {
                                            WINDOW_HEIGHT / 2.0f - mainMenu->optionsBtn.height / 2.0f + 105.0f,
                                            mainMenu->optionsBtn.width, mainMenu->optionsBtn.height};
 
-    Vector2 mousePos = globalMouse->getMousePosition();
+    if (CheckCollisionPointRec(mousePos, mainMenu->hallOfFameBtnRect)) {
+        mainMenu->isHallOfFameBtnHovered = true;
+    } else {
+        mainMenu->isHallOfFameBtnHovered = false;
+    }
 
     if (CheckCollisionPointRec(mousePos, mainMenu->startGameBtnRect)) {
         mainMenu->isStartGameBtnHovered = true;
@@ -53,6 +69,15 @@ static void update(Scene *scene) {
         mainMenu->isQuitBtnHovered = false;
     }
 
+    if (CheckCollisionPointRec(mousePos, mainMenu->quitBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        mainMenu->clickSound->playSound(mainMenu->clickSound);
+        windowShouldClose = true;
+    }
+
+    if (!globalWebsocketManager->isConnected(globalWebsocketManager)) {
+        return;
+    }
+
     if (CheckCollisionPointRec(mousePos, mainMenu->startGameBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         mainMenu->clickSound->playSound(mainMenu->clickSound);
 
@@ -60,15 +85,16 @@ static void update(Scene *scene) {
         sceneProvider->setScene((Scene *)matchingPairs, sceneProvider);
     }
 
-    if (CheckCollisionPointRec(mousePos, mainMenu->quitBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        mainMenu->clickSound->playSound(mainMenu->clickSound);
-        windowShouldClose = true;
-    }
-
     if (CheckCollisionPointRec(mousePos, mainMenu->optionsBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         mainMenu->clickSound->playSound(mainMenu->clickSound);
         Options *options = createOptions();
         sceneProvider->setScene((Scene *)options, sceneProvider);
+    }
+
+    if (CheckCollisionPointRec(mousePos, mainMenu->hallOfFameBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        mainMenu->clickSound->playSound(mainMenu->clickSound);
+        HallOfFame *hallOfFame = createHallOfFame();
+        sceneProvider->setScene((Scene *)hallOfFame, sceneProvider);
     }
 }
 
@@ -81,6 +107,8 @@ static void destroy(Scene *scene) {
     UnloadTexture(mainMenu->quitBtnPressed);
     UnloadTexture(mainMenu->optionsBtn);
     UnloadTexture(mainMenu->optionsBtnPressed);
+    UnloadTexture(mainMenu->hallOfFameBtn);
+    UnloadTexture(mainMenu->hallOfFameBtnPressed);
     mainMenu->clickSound->destroy(mainMenu->clickSound);
 }
 
@@ -110,6 +138,10 @@ MainMenu *createMainMenu() {
     mainMenu->optionsBtn = LoadTexture(ASSETS_PATH_PREFIX "images/options-btn.png");
     mainMenu->optionsBtnPressed = LoadTexture(ASSETS_PATH_PREFIX "images/options-btn-pressed.png");
     mainMenu->isOptionsBtnHovered = false;
+    mainMenu->hallOfFameBtn = LoadTexture(ASSETS_PATH_PREFIX "images/hall-of-fame-btn.png");
+    mainMenu->hallOfFameBtnPressed = LoadTexture(ASSETS_PATH_PREFIX "images/hall-of-fame-btn-pressed.png");
+    mainMenu->isHallOfFameBtnHovered = false;
+    mainMenu->hallOfFameBtnRect = (Rectangle){0, 0, 0, 0};
 
     SoundManager *clickSound = createSoundManager(ASSETS_PATH_PREFIX "audio/click.mp3");
     mainMenu->clickSound = clickSound;

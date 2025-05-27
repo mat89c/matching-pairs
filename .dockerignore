@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/*.log
+**/*.md
+**/android.matching_pairs
+**/html
+**/matching_pairs.apk
+.git

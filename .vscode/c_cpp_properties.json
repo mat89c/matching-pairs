@@ -5,7 +5,6 @@
             "includePath": [
                 "${workspaceFolder}/app/libs",
                 "${workspaceFolder}/app/**"
-
             ],
             "defines": [],
             "cStandard": "c17",

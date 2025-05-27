@@ -1,34 +1,7 @@
-#**************************************************************************************************
-#
-#   raylib makefile for Desktop platforms, Raspberry Pi, Android and HTML5
-#
-#   Copyright (c) 2013-2023 Ramon Santamaria (@raysan5)
-#
-#   This software is provided "as-is", without any express or implied warranty. In no event
-#   will the authors be held liable for any damages arising from the use of this software.
-#
-#   Permission is granted to anyone to use this software for any purpose, including commercial
-#   applications, and to alter it and redistribute it freely, subject to the following restrictions:
-#
-#     1. The origin of this software must not be misrepresented; you must not claim that you
-#     wrote the original software. If you use this software in a product, an acknowledgment
-#     in the product documentation would be appreciated but is not required.
-#
-#     2. Altered source versions must be plainly marked as such, and must not be misrepresented
-#     as being the original software.
-#
-#     3. This notice may not be removed or altered from any source distribution.
-#
-#**************************************************************************************************
-
 .PHONY: all clean run
 
-# Define required environment variables
-#------------------------------------------------------------------------------------------------
-# Define target platform: PLATFORM_DESKTOP, PLATFORM_RPI, PLATFORM_DRM, PLATFORM_ANDROID, PLATFORM_WEB
 PLATFORM              ?= $(PLATFORM)
 
-# Define project variables
 PROJECT_NAME          ?= matching_pairs
 PROJECT_VERSION       ?= $(PROJECT_VERSION)
 PROJECT_BUILD_PATH    ?= .
@@ -36,26 +9,20 @@ PROJECT_BUILD_PATH    ?= .
 ifeq ($(PLATFORM),PLATFORM_WEB)
     OUTPUT_DIR           ?= html
 else
-    OUTPUT_DIR           ?= src
+    OUTPUT_DIR           ?= .
 endif
 
 RAYLIB_PATH           ?= /raylib
 
-# Locations of raylib.h and libraylib.a/libraylib.so
-# NOTE: Those variables are only used for PLATFORM_OS: LINUX, BSD
 RAYLIB_INCLUDE_PATH   ?= /usr/local/include
 RAYLIB_LIB_PATH       ?= /usr/local/lib
 
-# Define raylib library paths for different platforms
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
     RAYLIB_LIB = $(RAYLIB_LIB_PATH)/libraylib.a
 else ifeq ($(PLATFORM),PLATFORM_WEB)
     RAYLIB_LIB = $(RAYLIB_LIB_PATH)/libraylib_web.a
-else ifeq ($(PLATFORM),PLATFORM_ANDROID)
-    RAYLIB_LIB = $(RAYLIB_LIB_PATH)/libraylib_android.a
 endif
 
-# Library type compilation: STATIC (.a) or SHARED (.so/.dll)
 RAYLIB_LIBTYPE        ?= STATIC
 
 # Build mode for project: DEBUG or RELEASE
@@ -72,133 +39,14 @@ BUILD_WEB_HEAP_SIZE   ?= 134217728
 BUILD_WEB_RESOURCES   ?= TRUE
 BUILD_WEB_RESOURCES_PATH  ?= /app/assets
 
-# Use cross-compiler for PLATFORM_RPI
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    USE_RPI_CROSS_COMPILER ?= FALSE
-    ifeq ($(USE_RPI_CROSS_COMPILER),TRUE)
-        RPI_TOOLCHAIN ?= C:/SysGCC/Raspberry
-        RPI_TOOLCHAIN_SYSROOT ?= $(RPI_TOOLCHAIN)/arm-linux-gnueabihf/sysroot
-    endif
-endif
+PLATFORM_OS = LINUX
+PLATFORM_SHELL = sh
 
-# Determine PLATFORM_OS in case PLATFORM_DESKTOP selected
-ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    # No uname.exe on MinGW!, but OS=Windows_NT on Windows!
-    # ifeq ($(UNAME),Msys) -> Windows
-    ifeq ($(OS),Windows_NT)
-        PLATFORM_OS = WINDOWS
-        ifndef PLATFORM_SHELL
-            PLATFORM_SHELL = cmd
-        endif
-    else
-        UNAMEOS = $(shell uname)
-        ifeq ($(UNAMEOS),Linux)
-            PLATFORM_OS = LINUX
-        endif
-        ifeq ($(UNAMEOS),FreeBSD)
-            PLATFORM_OS = BSD
-        endif
-        ifeq ($(UNAMEOS),OpenBSD)
-            PLATFORM_OS = BSD
-        endif
-        ifeq ($(UNAMEOS),NetBSD)
-            PLATFORM_OS = BSD
-        endif
-        ifeq ($(UNAMEOS),DragonFly)
-            PLATFORM_OS = BSD
-        endif
-        ifeq ($(UNAMEOS),Darwin)
-            PLATFORM_OS = OSX
-        endif
-        ifndef PLATFORM_SHELL
-            PLATFORM_SHELL = sh
-        endif
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    UNAMEOS = $(shell uname)
-    ifeq ($(UNAMEOS),Linux)
-        PLATFORM_OS = LINUX
-    endif
-    ifndef PLATFORM_SHELL
-        PLATFORM_SHELL = sh
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_DRM)
-    UNAMEOS = $(shell uname)
-    ifeq ($(UNAMEOS),Linux)
-        PLATFORM_OS = LINUX
-    endif
-    ifndef PLATFORM_SHELL
-        PLATFORM_SHELL = sh
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_WEB)
-    ifeq ($(OS),Windows_NT)
-        PLATFORM_OS = WINDOWS
-        ifndef PLATFORM_SHELL
-            PLATFORM_SHELL = cmd
-        endif
-    else
-        UNAMEOS = $(shell uname)
-        ifeq ($(UNAMEOS),Linux)
-            PLATFORM_OS = LINUX
-        endif
-        ifeq ($(UNAMEOS),Darwin)
-            PLATFORM_OS = OSX
-        endif
-        ifndef PLATFORM_SHELL
-            PLATFORM_SHELL = sh
-        endif
-    endif
-endif
-
-# Default path for raylib on Raspberry Pi
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    RAYLIB_PATH        ?= /home/pi/raylib
-endif
-ifeq ($(PLATFORM),PLATFORM_DRM)
-    RAYLIB_PATH        ?= /home/pi/raylib
-endif
-
-# Define raylib release directory for compiled library
 RAYLIB_RELEASE_PATH 	?= $(RAYLIB_PATH)/src
 
-ifeq ($(OS),Windows_NT)
-    ifeq ($(PLATFORM),PLATFORM_WEB)
-        # Emscripten required variables
-        EMSDK_PATH         ?= C:/emsdk
-        EMSCRIPTEN_PATH    ?= $(EMSDK_PATH)/upstream/emscripten
-        CLANG_PATH          = $(EMSDK_PATH)/upstream/bin
-        PYTHON_PATH         = $(EMSDK_PATH)/python/3.9.2-nuget_64bit
-        NODE_PATH           = $(EMSDK_PATH)/node/14.15.5_64bit/bin
-        export PATH         = $(EMSDK_PATH);$(EMSCRIPTEN_PATH);$(CLANG_PATH);$(NODE_PATH);$(PYTHON_PATH):$$(PATH)
-    endif
-endif
-
-# Define default C compiler: CC
-#------------------------------------------------------------------------------------------------
 CC = gcc
 
-ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),OSX)
-        # OSX default compiler
-        CC = clang
-    endif
-    ifeq ($(PLATFORM_OS),BSD)
-        # FreeBSD, OpenBSD, NetBSD, DragonFly default compiler
-        CC = clang
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    ifeq ($(USE_RPI_CROSS_COMPILER),TRUE)
-        # Define RPI cross-compiler
-        #CC = armv6j-hardfloat-linux-gnueabi-gcc
-        CC = $(RPI_TOOLCHAIN)/bin/arm-linux-gnueabihf-gcc
-    endif
-endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    # HTML5 emscripten compiler
     CC = emcc
     RAYLIB_PATH = /raylib
     RAYLIB_LIB_PATH = /usr/local/lib
@@ -207,15 +55,6 @@ endif
 # Define default make program: MAKE
 #------------------------------------------------------------------------------------------------
 MAKE ?= make
-
-ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),WINDOWS)
-        MAKE = mingw32-make
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_ANDROID)
-    MAKE = make
-endif
 
 # Define compiler flags: CFLAGS
 #------------------------------------------------------------------------------------------------
@@ -231,7 +70,10 @@ endif
 CFLAGS = -std=c11 -Wall -Wno-missing-braces -Wno-unused-but-set-variable -Wunused-result -D_DEFAULT_SOURCE
 
 ifeq ($(BUILD_MODE),DEBUG)
-    CFLAGS += -g -D_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize-address-use-after-scope
+    CFLAGS += -g -D_DEBUG
+    ifeq ($(PLATFORM),PLATFORM_DESKTOP)
+        CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fsanitize-address-use-after-scope
+    endif
 else
     ifeq ($(PLATFORM),PLATFORM_WEB)
         ifeq ($(BUILD_WEB_ASYNCIFY),TRUE)
@@ -244,70 +86,30 @@ else
     endif
 endif
 
-# Additional flags for compiler (if desired)
-#CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
     ifeq ($(PLATFORM_OS),LINUX)
         ifeq ($(RAYLIB_LIBTYPE),STATIC)
             CFLAGS += -D_DEFAULT_SOURCE
         endif
-        ifeq ($(RAYLIB_LIBTYPE),SHARED)
-            # Explicitly enable runtime link to libraylib.so
-            CFLAGS += -Wl,-rpath,$(RAYLIB_RELEASE_PATH)
-        endif
     endif
 endif
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    CFLAGS += -std=gnu99
-endif
-ifeq ($(PLATFORM),PLATFORM_DRM)
-    CFLAGS += -std=gnu99 -DEGL_NO_X11
-endif
 
-# Define include paths for required headers: INCLUDE_PATHS
-# NOTE: Some external/extras libraries could be required (stb, physac, easings...)
-#------------------------------------------------------------------------------------------------
 INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(RAYLIB_PATH)/src/external -I$(RAYLIB_PATH)/src/extras
 
-# Define additional directories containing required header files
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),BSD)
-        INCLUDE_PATHS += -I$(RAYLIB_INCLUDE_PATH)
-    endif
     ifeq ($(PLATFORM_OS),LINUX)
         INCLUDE_PATHS += -I$(RAYLIB_INCLUDE_PATH)
     endif
 endif
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    INCLUDE_PATHS += -I$(RPI_TOOLCHAIN_SYSROOT)/opt/vc/include
-    INCLUDE_PATHS += -I$(RPI_TOOLCHAIN_SYSROOT)/opt/vc/include/interface/vmcs_host/linux
-    INCLUDE_PATHS += -I$(RPI_TOOLCHAIN_SYSROOT)/opt/vc/include/interface/vcos/pthreads
-endif
-ifeq ($(PLATFORM),PLATFORM_DRM)
-    INCLUDE_PATHS += -I/usr/include/libdrm
-endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    INCLUDE_PATHS += -I$(EMSCRIPTEN_PATH)/cache/sysroot/include
+    INCLUDE_PATHS += -I$(EMSCRIPTEN_PATH)/cache/sysroot/include -I/usr/local/include
 endif
 
-# Define library paths containing required libs: LDFLAGS
-#------------------------------------------------------------------------------------------------
 LDFLAGS = -L. -L$(RAYLIB_RELEASE_PATH) -L$(RAYLIB_PATH)/src
 
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),WINDOWS)
-        # NOTE: The resource .rc file contains windows executable icon and properties
-        LDFLAGS += $(RAYLIB_PATH)/src/raylib.rc.data
-        # -Wl,--subsystem,windows hides the console window
-        ifeq ($(BUILD_MODE), RELEASE)
-            LDFLAGS += -Wl,--subsystem,windows
-        endif
-    endif
     ifeq ($(PLATFORM_OS),LINUX)
         LDFLAGS += -L$(RAYLIB_LIB_PATH)
-    endif
-    ifeq ($(PLATFORM_OS),BSD)
-        LDFLAGS += -Lsrc -L$(RAYLIB_LIB_PATH)
     endif
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
@@ -325,19 +127,16 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     # --memory-init-file 0       # to avoid an external memory initialization code file (.mem)
     # --preload-file resources   # specify a resources folder for data compilation
     # --source-map-base          # allow debugging in browser with source map
-    LDFLAGS += -s USE_GLFW=3 -s TOTAL_MEMORY=$(BUILD_WEB_HEAP_SIZE) -s FORCE_FILESYSTEM=1 -L$(RAYLIB_LIB_PATH)
+    LDFLAGS += -s USE_GLFW=3 -s TOTAL_MEMORY=$(BUILD_WEB_HEAP_SIZE) -s FORCE_FILESYSTEM=1 -s STACK_SIZE=131072 -L$(RAYLIB_LIB_PATH) /usr/local/lib/libcjson_web.a
     
-    # Build using asyncify
     ifeq ($(BUILD_WEB_ASYNCIFY),TRUE)
         LDFLAGS += -s ASYNCIFY
     endif
     
-    # Add resources building if required
     ifeq ($(BUILD_WEB_RESOURCES),TRUE)
         LDFLAGS += --preload-file $(BUILD_WEB_RESOURCES_PATH)
     endif
     
-    # Add debug mode flags if required
     ifeq ($(BUILD_MODE),DEBUG)
         LDFLAGS += -s ASSERTIONS=1 --profiling
     endif
@@ -345,110 +144,52 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     LDFLAGS += -s EXPORTED_FUNCTIONS=['_main','_malloc','_free']
     LDFLAGS += -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','HEAPF32']
 
-    # Define a custom shell .html and output extension
     LDFLAGS += --shell-file $(BUILD_WEB_SHELL)
     EXT = .html
 endif
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    LDFLAGS += -L$(RPI_TOOLCHAIN_SYSROOT)/opt/vc/lib
-endif
 
-# Define libraries required on linking: LDLIBS
-# NOTE: To link libraries (lib<name>.so or lib<name>.a), use -l<name>
-#------------------------------------------------------------------------------------------------
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),WINDOWS)
-        # Libraries for Windows desktop compilation
-        # NOTE: WinMM library required to set high-res timer resolution
-        LDLIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
-        # Required for physac examples
-        LDLIBS += -static -lpthread
-    endif
     ifeq ($(PLATFORM_OS),LINUX)
-        # Libraries for Debian GNU/Linux desktop compiling
         # NOTE: Required packages: libegl1-mesa-dev
-        LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt
+        LDLIBS = -lraylib /usr/local/lib/libwebsockets.a -lz -lssl -lcrypto -lGL -lm -lpthread -ldl -lrt /usr/local/lib/libcjson.a
 
-        # On X11 requires also below libraries
         LDLIBS += -lX11
-        # NOTE: It seems additional libraries are not required any more, latest GLFW just dlopen them
-        #LDLIBS += -lXrandr -lXinerama -lXi -lXxf86vm -lXcursor
 
-        # On Wayland windowing system, additional libraries requires
         ifeq ($(USE_WAYLAND_DISPLAY),TRUE)
             LDLIBS += -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
         endif
-        # Explicit link to libc
         ifeq ($(RAYLIB_LIBTYPE),SHARED)
             LDLIBS += -lc
         endif
     endif
-    ifeq ($(PLATFORM_OS),OSX)
-        # Libraries for OSX 10.9 desktop compiling
-        # NOTE: Required packages: libopenal-dev libegl1-mesa-dev
-        LDLIBS = -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo
-    endif
-    ifeq ($(PLATFORM_OS),BSD)
-        # Libraries for FreeBSD, OpenBSD, NetBSD, DragonFly desktop compiling
-        # NOTE: Required packages: mesa-libs
-        LDLIBS = -lraylib -lGL -lpthread -lm
-
-        # On XWindow requires also below libraries
-        LDLIBS += -lX11 -lXrandr -lXinerama -lXi -lXxf86vm -lXcursor
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_RPI)
-    # Libraries for Raspberry Pi compiling
-    # NOTE: Required packages: libasound2-dev (ALSA)
-    LDLIBS = -lraylib -lbrcmGLESv2 -lbrcmEGL -lpthread -lrt -lm -lbcm_host -ldl
-    ifeq ($(USE_RPI_CROSS_COMPILER),TRUE)
-        LDLIBS += -lvchiq_arm -lvcos
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_DRM)
-    # Libraries for DRM compiling
-    # NOTE: Required packages: libasound2-dev (ALSA)
-    LDLIBS = -lraylib -lGLESv2 -lEGL -lpthread -lrt -lm -lgbm -ldrm -ldl
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    # Libraries for web (HTML5) compiling
-    LDLIBS = $(RAYLIB_LIB)
+    LDLIBS = $(RAYLIB_LIB) /usr/local/lib/libcjson_web.a -lwebsocket.js
 endif
 
-# Define all source files required
 SRC_DIR = src
 OBJ_DIR = obj
 
-# Define all object files from source files
-SRC = $(shell find src/ -type f -name '*.c')
-OBJS = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-
-# Create obj directory and subdirectories if they don't exist
-$(shell mkdir -p $(dir $(OBJS)))
-
-# Define processes to execute
-#------------------------------------------------------------------------------------------------
-# For Android platform we call a custom Makefile.Android
-ifeq ($(PLATFORM),PLATFORM_ANDROID)
-    MAKEFILE_PARAMS = -f Makefile.Android
-    export PROJECT_NAME
-    export SRC_DIR
+# Exclude websocket manager files when compiling for PLATFORM_WEB
+ifeq ($(PLATFORM),PLATFORM_WEB)
+    SRC := $(shell find $(SRC_DIR) -name "*.c" ! -path "${SRC_DIR}/*/utils/websocket-manager/libwebsockets/*")
 else
-    MAKEFILE_PARAMS = $(PROJECT_NAME)
+    SRC := $(shell find $(SRC_DIR) -name "*.c" ! -path "${SRC_DIR}/*/utils/websocket-manager/emscripten/*")
 endif
 
-# Default target entry
-# NOTE: We call this Makefile target or Makefile.Android target
+OBJS = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+
+$(shell mkdir -p $(dir $(OBJS)))
+
+MAKEFILE_PARAMS = $(PROJECT_NAME)
+
 all:
 	$(MAKE) $(MAKEFILE_PARAMS)
 
-# Project target defined by PROJECT_NAME
 $(PROJECT_NAME): $(OBJS)
 	@mkdir -p $(OUTPUT_DIR)
 	$(CC) -o $(OUTPUT_DIR)/$(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
-# Compile source files
-# NOTE: This pattern will compile every module defined on $(OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
 
@@ -456,20 +197,13 @@ run:
 	$(MAKE) $(MAKEFILE_PARAMS)
 
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),WINDOWS)
-		$(PROJECT_NAME)
-    endif
     ifeq ($(PLATFORM_OS),LINUX)
-		./$(PROJECT_NAME)
-    endif
-    ifeq ($(PLATFORM_OS),OSX)
 		./$(PROJECT_NAME)
     endif
 endif
 
 .PHONY: clean_shell_cmd clean_shell_sh
 
-# Clean everything
 clean:	clean_shell_$(PLATFORM_SHELL)
 	@echo Cleaning done
 
@@ -479,29 +213,13 @@ ifeq ($(PLATFORM),PLATFORM_DESKTOP)
 		find . -type f -executable -delete
 		rm -fv *.o
     endif
-    ifeq ($(PLATFORM_OS),OSX)
-		find . -type f -perm +ugo+x -delete
-		rm -f *.o
-    endif
-endif
-ifeq ($(PLATFORM),PLATFORM_RPI)
-	find . -type f -executable -delete
-	rm -fv *.o
-endif
-ifeq ($(PLATFORM),PLATFORM_DRM)
-	find . -type f -executable -delete
-	rm -fv *.o
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
     ifeq ($(PLATFORM_OS),LINUX)
 		rm -fv *.o $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm
     endif
-    ifeq ($(PLATFORM_OS),OSX)
-		rm -f *.o $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm
-    endif
 endif
 
-# Set specific target variable
 clean_shell_cmd: SHELL=cmd
 clean_shell_cmd:
 	del *.o *.exe $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm /s

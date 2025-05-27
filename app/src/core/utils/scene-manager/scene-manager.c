@@ -4,13 +4,14 @@
 static void runScene(SceneProvider *sceneProvider) {
     Scene *currentScene = (Scene *)sceneProvider->scene;
 
+    if (NULL != sceneProvider->previousScene) {
+        sceneProvider->previousScene->destroy(sceneProvider->previousScene);
+        memoryManager->freeMemoryAtIndex(sceneProvider->previousSceneMemoryIndex);
+        sceneProvider->previousScene = NULL;
+    }
+
     if (false == currentScene->initialized) {
         currentScene->initialized = true;
-
-        if (NULL != sceneProvider->previousScene) {
-            sceneProvider->previousScene->destroy(sceneProvider->previousScene);
-            memoryManager->freeMemoryAtIndex(sceneProvider->previousSceneMemoryIndex);
-        }
     }
 
     currentScene->update(currentScene);
@@ -39,14 +40,6 @@ SceneManager *createSceneManager() {
     }
 
     sceneManager->runScene = runScene;
-    sceneManager->renderTarget = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
-    sceneManager->windowScale = 1.0f;
-    sceneManager->renderWidth = WINDOW_WIDTH;
-    sceneManager->renderHeight = WINDOW_HEIGHT;
-    sceneManager->offsetX = 0;
-    sceneManager->offsetY = 0;
-
-    SetTextureFilter(sceneManager->renderTarget.texture, TEXTURE_FILTER_BILINEAR);
 
     memoryManager->addObject(sceneManager);
 

@@ -10,6 +10,7 @@
 #include OPTIONS
 #include MATCHING_PAIRS
 #include GLOBAL_MOUSE
+#include HALL_OF_FAME
 #include <math.h>
 #include <stdbool.h>
 
@@ -36,6 +37,10 @@ struct MainMenu {
     Texture2D optionsBtnPressed;
     bool isOptionsBtnHovered;
     SoundManager *clickSound;
+    Texture2D hallOfFameBtn;
+    Texture2D hallOfFameBtnPressed;
+    bool isHallOfFameBtnHovered;
+    Rectangle hallOfFameBtnRect;
 };
 
 MainMenu *createMainMenu();

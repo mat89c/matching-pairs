@@ -1,9 +1,54 @@
 services:
   ubuntu:
-    container_name: ubuntu
     tty: true
     build:
       context: .
       dockerfile: ubuntu/Dockerfile
     volumes:
       - ../app:/app:rw
+    networks:
+      - app-network
+  
+  ubuntu-android:
+    tty: true
+    build:
+      context: .
+      dockerfile: android/Dockerfile
+    volumes:
+      - ../app:/app:rw
+    networks:
+      - app-network
+  
+  node:
+    build:
+      context: ..
+      dockerfile: docker/node/Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../webserver:/app
+      - ../webserver/node_modules:/app/node_modules
+    networks:
+      - app-network
+    depends_on:
+      - mongodb
+    
+  mongodb:
+    build:
+      context: ..
+      dockerfile: docker/mongodb/Dockerfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: game
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: game
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./mongodb/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

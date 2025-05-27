@@ -3,8 +3,10 @@
 
 #if defined(PLATFORM_ANDROID)
 #define ASSETS_PATH_PREFIX ""
+#elif defined(PLATFORM_WEB)
+#define ASSETS_PATH_PREFIX "/app/assets/"
 #else
-#define ASSETS_PATH_PREFIX "app/assets/"
+#define ASSETS_PATH_PREFIX "assets/"
 #endif
 
 #define WINDOW_MANAGER "src/include/utils/window-manager/window-manager.h"
@@ -23,5 +25,18 @@
 #define CARD_TEXTURE "src/include/card/card-texture.h"
 #define GLOBAL_ID_GENERATOR "src/include/utils/global-id-generator/global-id-generator.h"
 #define GLOBAL_MOUSE "src/include/utils/global-mouse/global-mouse.h"
+#define GLOBAL_WEBSOCKET_MANAGER "src/include/utils/websocket-manager/global-websocket-manager.h"
+#define WEBSOCKET_SUBSCRIBER "src/include/utils/websocket-manager/websocket-subscriber.h"
+#define MATCHING_PAIRS_MESSAGE_SENDER "src/include/utils/websocket-message-sender/matching-pairs-message-sender.h"
+#define CARD_MESSAGE_SENDER "src/include/utils/websocket-message-sender/card-message-sender.h"
+#define MATCHING_PAIRS_MESSAGE_RECEIVER "src/include/utils/websocket-message-receiver/matching-pairs-message-receiver.h"
+#define CARD_MESSAGE_RECEIVER "src/include/utils/websocket-message-receiver/card-message-receiver.h"
+#define HALL_OF_FAME "src/include/scene/hall-of-fame/hall-of-fame.h"
+#define HALL_OF_FAME_RECEIVER "src/include/utils/websocket-message-receiver/hall-of-fame-receiver.h"
+#define HALL_OF_FAME_SENDER "src/include/utils/websocket-message-sender/hall-of-fame-sender.h"
+#define PLAYER "src/include/scene/hall-of-fame/player.h"
+#define LIBWEBSOCKETS_ADAPTER "src/include/utils/websocket-manager/libwebsockets/libwebsockets-adapter.h"
+#define EMBSCRIPTEN_ADAPTER "src/include/utils/websocket-manager/emscripten/emscripten-adapter.h"
+#define WEBSOCKET_ADAPTER "src/include/utils/websocket-manager/websocket-adapter.h"
 
 #endif

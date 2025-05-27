@@ -3045,6 +3045,34 @@ int GuiValueBox(Rectangle bounds, const char *text, int *value, int minValue, in
 
             int keyCount = (int)strlen(textValue);
 
+            // Add or remove minus symbol
+            if (IsKeyPressed(KEY_MINUS))
+            {
+                if (textValue[0] == '-')
+                {
+                    for(int i = 0 ; i < keyCount; i++ )
+                    {
+                        textValue[i] = textValue[i + 1];
+                    }
+                    keyCount--;
+                    valueHasChanged = true;
+                }
+                else if (keyCount < RAYGUI_VALUEBOX_MAX_CHARS -1){
+                    if (keyCount == 0){
+                        textValue[0] = '0';
+                        textValue[1] = '\0';
+                        keyCount++;
+                    }
+                    for(int i = keyCount ; i > -1; i-- )
+                    {
+                        textValue[i + 1] = textValue[i];
+                    }
+                    textValue[0] = '-';
+                    keyCount++;
+                    valueHasChanged = true;
+                }
+            }
+
             // Only allow keys in range [48..57]
             if (keyCount < RAYGUI_VALUEBOX_MAX_CHARS)
             {
@@ -3163,6 +3191,34 @@ int GuiValueBoxFloat(Rectangle bounds, const char *text, char *textValue, float 
             state = STATE_PRESSED;
 
             int keyCount = (int)strlen(textValue);
+
+            // Add or remove minus symbol
+            if (IsKeyPressed(KEY_MINUS))
+            {
+                if (textValue[0] == '-')
+                {
+                for (int i = 0; i < keyCount; i++)
+                {
+                    textValue[i] = textValue[i + 1];
+                }
+                keyCount--;
+                valueHasChanged = true;
+                }
+                else if (keyCount < RAYGUI_VALUEBOX_MAX_CHARS - 1) {
+                if (keyCount == 0) {
+                    textValue[0] = '0';
+                    textValue[1] = '\0';
+                    keyCount++;
+                }
+                for (int i = keyCount; i > -1; i--)
+                {
+                    textValue[i + 1] = textValue[i];
+                }
+                textValue[0] = '-';
+                keyCount++;
+                valueHasChanged = true;
+                }
+            }
 
             // Only allow keys in range [48..57]
             if (keyCount < RAYGUI_VALUEBOX_MAX_CHARS)
@@ -3653,22 +3709,22 @@ int GuiListViewEx(Rectangle bounds, const char **text, int count, int *scrollInd
     return result;
 }
 
-// Color Panel control - Color (RGBA) variant.
+// Color Panel control - Color (RGBA) variant
 int GuiColorPanel(Rectangle bounds, const char *text, Color *color)
 {
     int result = 0;
 
     Vector3 vcolor = { (float)color->r/255.0f, (float)color->g/255.0f, (float)color->b/255.0f };
     Vector3 hsv = ConvertRGBtoHSV(vcolor);
-    Vector3 prevHsv = hsv; // workaround to see if GuiColorPanelHSV modifies the hsv.
+    Vector3 prevHsv = hsv; // workaround to see if GuiColorPanelHSV modifies the hsv
 
     GuiColorPanelHSV(bounds, text, &hsv);
 
-    // Check if the hsv was changed, only then change the color.
-    // This is required, because the Color->HSV->Color conversion has precision errors.
-    // Thus the assignment from HSV to Color should only be made, if the HSV has a new user-entered value.
-    // Otherwise GuiColorPanel would often modify it's color without user input.
-    // TODO: GuiColorPanelHSV could return 1 if the slider was dragged, to simplify this check.
+    // Check if the hsv was changed, only then change the color
+    // This is required, because the Color->HSV->Color conversion has precision errors
+    // Thus the assignment from HSV to Color should only be made, if the HSV has a new user-entered value
+    // Otherwise GuiColorPanel would often modify it's color without user input
+    // TODO: GuiColorPanelHSV could return 1 if the slider was dragged, to simplify this check
     if (hsv.x != prevHsv.x || hsv.y != prevHsv.y || hsv.z != prevHsv.z)
     {
         Vector3 rgb = ConvertHSVtoRGB(hsv);
@@ -3879,7 +3935,7 @@ int GuiColorPicker(Rectangle bounds, const char *text, Color *color)
     Rectangle boundsHue = { (float)bounds.x + bounds.width + GuiGetStyle(COLORPICKER, HUEBAR_PADDING), (float)bounds.y, (float)GuiGetStyle(COLORPICKER, HUEBAR_WIDTH), (float)bounds.height };
     //Rectangle boundsAlpha = { bounds.x, bounds.y + bounds.height + GuiGetStyle(COLORPICKER, BARS_PADDING), bounds.width, GuiGetStyle(COLORPICKER, BARS_THICK) };
 
-    // NOTE: this conversion can cause low hue-resolution, if the r, g and b value are very similar, which causes the hue bar to shift around when only the GuiColorPanel is used.
+    // NOTE: this conversion can cause low hue-resolution, if the r, g and b value are very similar, which causes the hue bar to shift around when only the GuiColorPanel is used
     Vector3 hsv = ConvertRGBtoHSV(RAYGUI_CLITERAL(Vector3){ (*color).r/255.0f, (*color).g/255.0f, (*color).b/255.0f });
 
     GuiColorBarHue(boundsHue, NULL, &hsv.x);
@@ -3892,8 +3948,8 @@ int GuiColorPicker(Rectangle bounds, const char *text, Color *color)
     return result;
 }
 
-// Color Picker control that avoids conversion to RGB and back to HSV on each call, thus avoiding jittering.
-// The user can call ConvertHSVtoRGB() to convert *colorHsv value to RGB.
+// Color Picker control that avoids conversion to RGB and back to HSV on each call, thus avoiding jittering
+// The user can call ConvertHSVtoRGB() to convert *colorHsv value to RGB
 // NOTE: It's divided in multiple controls:
 //      int GuiColorPanelHSV(Rectangle bounds, const char *text, Vector3 *colorHsv)
 //      int GuiColorBarAlpha(Rectangle bounds, const char *text, float *alpha)

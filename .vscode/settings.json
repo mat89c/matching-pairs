@@ -4,7 +4,10 @@
         "cstdlib": "c",
         "paths.h": "c",
         "android_native_app_glue.h": "c",
-        "emscripten.h": "c"
+        "emscripten.h": "c",
+        "raylib.h": "c",
+        "promise.h": "c",
+        "stdio.h": "c"
     },
     "files.insertFinalNewline": true
 }

@@ -3,10 +3,11 @@
 
 #include "src/paths.h"
 #include MEMORY_MANAGER
-#include GLOBAL_ID_GENERATOR
 #include CARD_TEXTURE
 #include GLOBAL_MOUSE
 #include SOUND_MANAGER
+#include MATCHING_PAIRS
+#include <cjson/cJSON.h>
 #include <raylib.h>
 #include <stdbool.h>
 
@@ -20,20 +21,18 @@ typedef struct Card Card;
 
 struct Card {
     Rectangle destination;
-    int id;
+    char *index;
     bool isFlipped;
-    bool isMatched;
     Texture2D frontTexture;
     Texture2D backTexture;
     void (*destroy)(Card *card);
     void (*draw)(Card *card);
     void (*update)(Card *card, struct MatchingPairs *matchingPairs);
-    void (*onFlip)(struct Card *card, struct MatchingPairs *matchingPairs);
+    void (*onFlip)(Card *card, struct MatchingPairs *matchingPairs);
     bool isVisible;
     SoundManager *clickSound;
 };
 
-Card *createCard(CardTexture *cardTexture, size_t index);
-Card *cloneCard(Card *card);
+Card *createCard(CardTexture *cardTexture, char *index);
 
 #endif
