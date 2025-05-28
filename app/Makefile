@@ -28,11 +28,8 @@ RAYLIB_LIBTYPE        ?= STATIC
 # Build mode for project: DEBUG or RELEASE
 BUILD_MODE            ?= DEBUG
 
-# Use Wayland display server protocol on Linux desktop (by default it uses X11 windowing system)
-# NOTE: This variable is only used for PLATFORM_OS: LINUX
 USE_WAYLAND_DISPLAY   ?= FALSE
 
-# PLATFORM_WEB: Default properties
 BUILD_WEB_ASYNCIFY    ?= FALSE
 BUILD_WEB_SHELL       ?= /app/template.html
 BUILD_WEB_HEAP_SIZE   ?= 134217728
@@ -52,21 +49,8 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     RAYLIB_LIB_PATH = /usr/local/lib
 endif
 
-# Define default make program: MAKE
-#------------------------------------------------------------------------------------------------
 MAKE ?= make
 
-# Define compiler flags: CFLAGS
-#------------------------------------------------------------------------------------------------
-#  -O1                  defines optimization level
-#  -g                   include debug information on compilation
-#  -s                   strip unnecessary data from build
-#  -Wall                turns on most, but not all, compiler warnings
-#  -std=c99             defines C language mode (standard C from 1999 revision)
-#  -std=gnu99           defines C language mode (GNU C from 1999 revision)
-#  -Wno-missing-braces  ignore invalid warning (GCC bug 53119)
-#  -Wno-unused-value    ignore unused return values of some functions (i.e. fread())
-#  -D_DEFAULT_SOURCE    use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
 CFLAGS = -std=c11 -Wall -Wno-missing-braces -Wno-unused-but-set-variable -Wunused-result -D_DEFAULT_SOURCE
 
 ifeq ($(BUILD_MODE),DEBUG)
@@ -113,20 +97,6 @@ ifeq ($(PLATFORM),PLATFORM_DESKTOP)
     endif
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    # -Os                        # size optimization
-    # -O2                        # optimization level 2, if used, also set --memory-init-file 0
-    # -s USE_GLFW=3              # Use glfw3 library (context/input management)
-    # -s ALLOW_MEMORY_GROWTH=1   # to allow memory resizing -> WARNING: Audio buffers could FAIL!
-    # -s TOTAL_MEMORY=16777216   # to specify heap memory size (default = 16MB) (67108864 = 64MB)
-    # -s USE_PTHREADS=1          # multithreading support
-    # -s WASM=0                  # disable Web Assembly, emitted by default
-    # -s ASYNCIFY                # lets synchronous C/C++ code interact with asynchronous JS
-    # -s FORCE_FILESYSTEM=1      # force filesystem to load/save files data
-    # -s ASSERTIONS=1            # enable runtime checks for common memory allocation errors (-O1 and above turn it off)
-    # --profiling                # include information for code profiling
-    # --memory-init-file 0       # to avoid an external memory initialization code file (.mem)
-    # --preload-file resources   # specify a resources folder for data compilation
-    # --source-map-base          # allow debugging in browser with source map
     LDFLAGS += -s USE_GLFW=3 -s TOTAL_MEMORY=$(BUILD_WEB_HEAP_SIZE) -s FORCE_FILESYSTEM=1 -s STACK_SIZE=131072 -L$(RAYLIB_LIB_PATH) /usr/local/lib/libcjson_web.a
     
     ifeq ($(BUILD_WEB_ASYNCIFY),TRUE)
@@ -170,11 +140,20 @@ endif
 SRC_DIR = src
 OBJ_DIR = obj
 
-# Exclude websocket manager files when compiling for PLATFORM_WEB
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    SRC := $(shell find $(SRC_DIR) -name "*.c" ! -path "${SRC_DIR}/*/utils/websocket-manager/libwebsockets/*")
-else
-    SRC := $(shell find $(SRC_DIR) -name "*.c" ! -path "${SRC_DIR}/*/utils/websocket-manager/emscripten/*")
+    SRC := $(shell find $(SRC_DIR) -name "*.c" \
+    ! -path "$(SRC_DIR)/*/utils/websocket-manager/libwebsockets/*" \
+    ! -path "$(SRC_DIR)/*/utils/android/*")
+endif
+
+ifeq ($(PLATFORM),PLATFORM_ANDROID)
+        SRC := $(shell find $(SRC_DIR) -name "*.c" ! -path "${SRC_DIR}/*/utils/websocket-manager/emscripten/*")
+endif
+
+ifeq ($(PLATFORM),PLATFORM_DESKTOP)
+    SRC := $(shell find $(SRC_DIR) -name "*.c" \
+    ! -path "$(SRC_DIR)/*/utils/websocket-manager/emscripten/*" \
+    ! -path "$(SRC_DIR)/*/utils/android/*")
 endif
 
 OBJS = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)

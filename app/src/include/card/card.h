@@ -28,7 +28,6 @@ struct Card {
     void (*destroy)(Card *card);
     void (*draw)(Card *card);
     void (*update)(Card *card, struct MatchingPairs *matchingPairs);
-    void (*onFlip)(Card *card, struct MatchingPairs *matchingPairs);
     bool isVisible;
     SoundManager *clickSound;
 };

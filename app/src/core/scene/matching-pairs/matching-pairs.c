@@ -133,9 +133,9 @@ static void draw(Scene *scene) {
             matchingPairs->isNicknameFocused = !matchingPairs->isNicknameFocused;
 #if defined(PLATFORM_ANDROID)
             if (matchingPairs->isNicknameFocused) {
-                ShowSoftKeyboard();
+                androidBridge->showSoftKeyboard(matchingPairs->nickname, MAX_NICKNAME_LENGTH);
             } else {
-                HideSoftKeyboard();
+                androidBridge->hideSoftKeyboard();
             }
 #endif
         }
@@ -153,18 +153,6 @@ static void draw(Scene *scene) {
 
     for (int i = 0; i < NUMBER_OF_CARDS; i++) {
         matchingPairs->cards[i]->draw(matchingPairs->cards[i]);
-    }
-
-    if (GuiTextBox(matchingPairs->nicknameRect, matchingPairs->nickname, MAX_NICKNAME_LENGTH,
-                   matchingPairs->isNicknameFocused)) {
-        matchingPairs->isNicknameFocused = !matchingPairs->isNicknameFocused;
-#if defined(PLATFORM_ANDROID)
-        if (matchingPairs->isNicknameFocused) {
-            ShowSoftKeyboard();
-        } else {
-            HideSoftKeyboard();
-        }
-#endif
     }
 }
 
@@ -244,13 +232,3 @@ MatchingPairs *createMatchingPairs() {
 
     return matchingPairs;
 }
-
-#if defined(PLATFORM_ANDROID)
-void UpdateGuiTextBoxText(const char *text) {
-    MatchingPairs *matchingPairs = (MatchingPairs *)sceneProvider->scene;
-    if (matchingPairs != NULL && matchingPairs->isNicknameFocused) {
-        strncpy(matchingPairs->nickname, text, MAX_NICKNAME_LENGTH - 1);
-        matchingPairs->nickname[MAX_NICKNAME_LENGTH - 1] = '\0';
-    }
-}
-#endif

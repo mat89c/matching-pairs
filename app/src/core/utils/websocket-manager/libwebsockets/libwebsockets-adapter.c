@@ -3,11 +3,9 @@
 
 static void *websocketServiceThread(void *arg) {
     LibwebsocketsAdapter *adapter = (LibwebsocketsAdapter *)arg;
-    TraceLog(LOG_INFO, "Starting websocket service thread");
     while (adapter->is_running) {
         lws_service(adapter->context, 50);
     }
-    TraceLog(LOG_INFO, "Websocket service thread stopped");
     return NULL;
 }
 
@@ -95,11 +93,9 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason, void *use
 
         if (lws_is_final_fragment(wsi)) {
             buffer[buffer_pos] = '\0';
-            TraceLog(LOG_INFO, "Received complete message: %s", buffer);
 
             cJSON *json = cJSON_Parse(buffer);
             if (json != NULL) {
-                TraceLog(LOG_INFO, "Parsed JSON message successfully");
                 for (size_t i = 0; i < globalWebsocketManager->websocketSubscriberCount; i++) {
                     if (globalWebsocketManager->websocketSubscribers[i] != NULL) {
                         TraceLog(LOG_INFO, "Notifying subscriber %d", i);
@@ -125,8 +121,6 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason, void *use
         buffer_pos = 0;
         break;
     case LWS_CALLBACK_CLOSED:
-        TraceLog(LOG_INFO, "WebSocket connection closed");
-        TraceLog(LOG_INFO, "Close reason: %s", in ? (char *)in : "No reason provided");
         buffer_pos = 0;
         break;
     default:
@@ -161,19 +155,13 @@ void sendWebsocketMessage(WebsocketAdapter *abstractAdapter, cJSON *json) {
 
     memcpy(buf + LWS_PRE, message, len);
 
-    TraceLog(LOG_INFO, "Writing message to websocket (length: %d)", len);
-    TraceLog(LOG_INFO, "Message content: %s", message);
-    TraceLog(LOG_INFO, "Websocket state: %d", lws_http_client_http_response(adapter->wsi));
-
     int result = lws_write(adapter->wsi, buf + LWS_PRE, len, LWS_WRITE_TEXT);
     free(message);
 
     if (result == -1) {
         TraceLog(LOG_ERROR, "Cannot send message - lws_write returned -1");
-        TraceLog(LOG_ERROR, "Last error: %s", strerror(errno));
         return;
     }
-    TraceLog(LOG_INFO, "Message sent successfully, bytes written: %d", result);
 }
 
 static void disconnectWebsocket(WebsocketAdapter *abstractAdapter) {

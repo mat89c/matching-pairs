@@ -18,6 +18,7 @@
 #include MATCHING_PAIRS_MESSAGE_RECEIVER
 #include CARD_MESSAGE_RECEIVER
 #include HALL_OF_FAME
+#include ANDROID_BRIDGE
 
 #define NUMBER_OF_PAIRS 9
 #define NUMBER_OF_CARDS NUMBER_OF_PAIRS * 2
@@ -65,12 +66,10 @@ struct MatchingPairs {
     Rectangle nicknameRect;
     bool isNicknameFocused;
     bool isNicknameSubmitted;
+    char *activeTextBox;
+    int activeTextBoxMaxLength;
 };
 
 MatchingPairs *createMatchingPairs();
 
-#if defined(PLATFORM_ANDROID)
-void UpdateGuiTextBoxText(const char *text);
 #endif
-
-#endif // MATCHING_PAIRS_H

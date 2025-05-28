@@ -14,7 +14,7 @@ typedef struct WebsocketSubscriber WebsocketSubscriber;
 struct WebsocketSubscriber {
     void (*subscribe)(WebsocketSubscriber *subscriber, cJSON *json);
     WebsocketMessageCallback callback;
-    void *self; // Pointer to the object implementing the callback
+    void *self;
 };
 
 WebsocketSubscriber *createWebsocketSubscriber(void *self, WebsocketMessageCallback callback);

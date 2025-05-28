@@ -1,28 +1,6 @@
 #include "src/paths.h"
 #include CARD
 
-// static void subscribeWebsocketMessage(void *self, cJSON *json) { Card *card = (Card *)self; }
-
-static void onFlip(Card *card, struct MatchingPairs *matchingPairs) {
-    // matchingPairs->isCardFlipped = true;
-    // matchingPairs->flippedCardIndex = card->index;
-    // if (matchingPairs->firstFlippedCard == NULL) {
-    //     matchingPairs->firstFlippedCard = card;
-    //     return;
-    // }
-
-    // if (card == matchingPairs->firstFlippedCard) {
-    //     return;
-    // }
-
-    // if (matchingPairs->secondFlippedCard == NULL) {
-    //     matchingPairs->secondFlippedCard = card;
-    //     matchingPairs->awaitingForMatch = true;
-    //     matchingPairs->matchDelayTimer = 0.0f;
-    // }
-    // globalWebsocketManager->sendWebsocketMessage(globalWebsocketManager, "card:flipped", card->id);
-}
-
 static void update(Card *card, struct MatchingPairs *matchingPairs) {
     if (CheckCollisionPointRec(globalMouse->getMousePosition(), card->destination) &&
         IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -65,7 +43,6 @@ Card *createCard(CardTexture *cardTexture, char *index) {
     card->destroy = destroy;
     card->draw = draw;
     card->update = update;
-    card->onFlip = onFlip;
     card->isVisible = true;
 
     SoundManager *clickSound = createSoundManager(ASSETS_PATH_PREFIX "audio/click.mp3");

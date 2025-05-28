@@ -38,5 +38,6 @@
 #define LIBWEBSOCKETS_ADAPTER "src/include/utils/websocket-manager/libwebsockets/libwebsockets-adapter.h"
 #define EMBSCRIPTEN_ADAPTER "src/include/utils/websocket-manager/emscripten/emscripten-adapter.h"
 #define WEBSOCKET_ADAPTER "src/include/utils/websocket-manager/websocket-adapter.h"
+#define ANDROID_BRIDGE "src/include/utils/android/android-bridge.h"
 
 #endif
