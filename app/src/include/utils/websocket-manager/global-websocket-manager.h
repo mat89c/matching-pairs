@@ -9,8 +9,13 @@
 #include WEBSOCKET_SUBSCRIBER
 
 #define USE_WSS 0
-#define ADDRESS "api-matching-pairs.czajka-mateusz.pl"
-#define PORT 443
+// Change this to your computer's local IP address (e.g. "192.168.1.100")
+// You can find your IP address using:
+// - On Linux: ip addr show
+// - On Windows: ipconfig
+// - On Mac: ifconfig
+#define ADDRESS "localhost" // Your actual IP address or domain name
+#define PORT 3000
 
 #if defined(PLATFORM_DESKTOP) || defined(PLATFORM_ANDROID)
 #include LIBWEBSOCKETS_ADAPTER

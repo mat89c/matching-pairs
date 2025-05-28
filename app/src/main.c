@@ -80,15 +80,19 @@ int main(void) {
 #endif
 
     TraceLog(LOG_INFO, "Cleaning up resources");
-    musicManager->destroy(musicManager);
-    sceneProvider->scene->destroy(sceneProvider->scene);
+
+    musicManager->stopMusic(musicManager);
 
     globalWebsocketManager->disconnectWebsocket(globalWebsocketManager);
 
-    destroyMemoryManager(memoryManager);
+    sceneProvider->scene->destroy(sceneProvider->scene);
+    musicManager->destroy(musicManager);
 
     CloseAudioDevice();
+
+    destroyMemoryManager(memoryManager);
     CloseWindow();
+
     TraceLog(LOG_INFO, "Application shutdown complete");
 
     return 0;

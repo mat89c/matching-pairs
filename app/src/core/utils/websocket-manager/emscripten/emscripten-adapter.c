@@ -50,7 +50,11 @@ static void connectWebsocket(WebsocketAdapter *abstractAdapter, const char *addr
     }
 
     char url[256];
-    snprintf(url, sizeof(url), "wss://%s:%d/game", address, port);
+    if (1 == USE_WSS) {
+        snprintf(url, sizeof(url), "wss://%s:%d/game", address, port);
+    } else {
+        snprintf(url, sizeof(url), "ws://%s:%d/game", address, port);
+    }
 
     EmscriptenWebSocketCreateAttributes attributes = {
         .url = url,

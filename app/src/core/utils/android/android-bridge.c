@@ -76,6 +76,7 @@ static void showSoftKeyboard(char *inputDestination, int maxLength) {
 }
 
 static void hideSoftKeyboard(void) {
+    JNIEnv *env = AttachCurrentThread();
     jobject nativeLoaderInstance = GetNativeLoaderInstance();
 
     jclass nativeLoaderClass = (*env)->GetObjectClass(env, nativeLoaderInstance);

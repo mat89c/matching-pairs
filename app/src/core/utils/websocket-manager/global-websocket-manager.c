@@ -11,10 +11,8 @@ static void connectWebsocket(GlobalWebsocketManager *manager, const char *addres
 static bool isConnected(GlobalWebsocketManager *manager) { return manager->adapter->isConnected; }
 
 static void sendWebsocketMessage(GlobalWebsocketManager *manager, cJSON *json) {
-    TraceLog(LOG_INFO, "Sending websocket message");
     WebsocketAdapter *adapter = manager->adapter;
     adapter->sendWebsocketMessage(adapter, json);
-    TraceLog(LOG_INFO, "Websocket message sent");
 }
 
 static void disconnectWebsocket(GlobalWebsocketManager *manager) {

@@ -20,13 +20,16 @@ static void connectWebsocket(WebsocketAdapter *abstractAdapter, const char *addr
                                               {NULL, NULL, 0, 0}};
     info.gid = -1;
     info.uid = -1;
-    info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-    info.client_ssl_cert_filepath = NULL;
-    info.client_ssl_private_key_filepath = NULL;
-    info.client_ssl_ca_filepath = NULL;
-    info.ssl_private_key_filepath = NULL;
-    info.ssl_cert_filepath = NULL;
-    info.ssl_ca_filepath = NULL;
+
+    if (1 == USE_WSS) {
+        info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+        info.client_ssl_cert_filepath = NULL;
+        info.client_ssl_private_key_filepath = NULL;
+        info.client_ssl_ca_filepath = NULL;
+        info.ssl_private_key_filepath = NULL;
+        info.ssl_cert_filepath = NULL;
+        info.ssl_ca_filepath = NULL;
+    }
 
     TraceLog(LOG_INFO, "Creating websocket context");
     adapter->context = lws_create_context(&info);
@@ -42,8 +45,11 @@ static void connectWebsocket(WebsocketAdapter *abstractAdapter, const char *addr
     ccinfo.path = "/game";
     ccinfo.host = address;
     ccinfo.protocol = MATCHIN_PAIRS_PROTOCOL;
-    ccinfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE |
-                            LCCSCF_ALLOW_EXPIRED | LCCSCF_ALLOW_SELFSIGNED;
+
+    if (1 == USE_WSS) {
+        ccinfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE |
+                                LCCSCF_ALLOW_EXPIRED | LCCSCF_ALLOW_SELFSIGNED;
+    }
 
     lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_CLIENT | LLL_HEADER, NULL);
 
@@ -98,15 +104,12 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason, void *use
             if (json != NULL) {
                 for (size_t i = 0; i < globalWebsocketManager->websocketSubscriberCount; i++) {
                     if (globalWebsocketManager->websocketSubscribers[i] != NULL) {
-                        TraceLog(LOG_INFO, "Notifying subscriber %d", i);
                         globalWebsocketManager->websocketSubscribers[i]->subscribe(
                             globalWebsocketManager->websocketSubscribers[i], json);
                     }
                 }
 
                 cJSON_Delete(json);
-            } else {
-                TraceLog(LOG_ERROR, "Failed to parse JSON message");
             }
 
             buffer_pos = 0;
@@ -130,7 +133,6 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason, void *use
 }
 
 void sendWebsocketMessage(WebsocketAdapter *abstractAdapter, cJSON *json) {
-    TraceLog(LOG_INFO, "Sending websocket message");
     LibwebsocketsAdapter *adapter = (LibwebsocketsAdapter *)abstractAdapter;
 
     if (!adapter->wsi) {
